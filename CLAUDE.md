@@ -138,13 +138,14 @@ pnpm --filter @axis/notification-service dev
 ## When you add something new
 
 1. **New service** → copy the api-gateway layout (`app/main.py`, `app/config.py`, `app/routes/`, `Dockerfile`, `pyproject.toml`, `tests/`), add to `infra/docker/docker-compose.yml` if it runs in-cluster, add to `.github/workflows/ci.yml` matrix, add a CLAUDE.md in its folder.
-2. **New connector** → copy an existing `connectors/<tool>` layout, implement the base `Connector` protocol from `connectors/_base/connector.py`, add to the P1/P2/P3 table in `connectors/README.md`.
+2. **New connector** → write `connectors/<tool>/src/client.py` (vendor API wrapper, pure I/O), then OAuth at `services/connector-manager/app/oauth/<tool>.py`, then routes at `services/connector-manager/app/routes/tools.py` (`/tools/<tool>/*`), then capability classes at `services/agent-orchestration/app/capabilities/<tool>.py`. Update `apps/web/lib/queries/connectors.ts` + `apps/web/lib/capabilities.ts` + the `TOOLS` array on `apps/web/app/(app)/connections/page.tsx`. Full steps in `connectors/README.md`. **There is no `Connector` base class** — the deleted one is in git history if you really need to look.
 3. **New web page** → add to `apps/web/app/<route>/page.tsx`, add to the Sidebar nav in `apps/web/components/sidebar.tsx`.
 4. **New DB table** → add migration to `infra/docker/init/postgres/` (numbered), update `packages/shared-types` if it crosses the API.
 5. **New env var** → add to both `.env.example` AND the service's `app/config.py` Settings class.
 
 ## Things NOT to do
 
+- **No dead code.** Anywhere. If a class, file, function, route, hook, or component isn't imported / called / mounted by something live, delete it — don't leave it as a placeholder, don't leave it as a "future use" stub, don't leave it as a base-class-nobody-inherits-from. Discovered scaffolding from a half-finished initiative? Delete it in the same PR you discovered it. The deleted code is in git history; you can always bring it back.
 - Do not add feature flags for hypothetical future work. Delete unused code.
 - Do not write backwards-compat shims or re-export stubs. If something moved, update callers.
 - Do not add error handling for scenarios that cannot happen. Trust Pydantic + FastAPI's validation at the boundary.

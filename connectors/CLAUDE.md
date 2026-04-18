@@ -1,80 +1,37 @@
 # CLAUDE.md — connectors/
 
-One module per external tool. Each implements the same four-capability `Connector` protocol. Spec §07.
+Each connector is a thin async client around a vendor API. **No `Connector` base class** — that pattern was tried and removed because nothing actually inherited from it correctly. The real agent-facing dispatch lives in `services/connector-manager/app/routes/tools.py`.
 
-## The protocol
-
-Defined in `connectors/_base/connector.py`:
-
-```python
-class Connector(ABC):
-    tool_name: str
-    supports_write: bool = False
-
-    async def index(self, user_id, since=None) -> list[dict]: ...
-    async def listen(self, user_id) -> None: ...
-    async def query(self, user_id, query) -> list[dict]: ...
-    async def write(self, user_id, action) -> dict: ...  # override if supports_write
-```
-
-| Method | Purpose |
-|---|---|
-| `index` | Pull all (or incremental since last cursor) content into the user's Qdrant namespace |
-| `listen` | Subscribe to real-time updates — webhook, Pub/Sub, polling, file watcher |
-| `query` | Answer a specific structured question (not LLM — this is API calls) |
-| `write` | Push an action back to the tool. Must include a rollback-able diff. |
-
-## Inventory
-
-**Phase 1 (launch):**
-- `slack/` — OAuth 2 + Events API + chat.postMessage
-- `notion/` — OAuth 2 + 15-min poll + pages/databases write
-- `gmail/` — OAuth 2 + Pub/Sub push + draft/send (send ALWAYS requires confirmation)
-- `gdrive/` — OAuth 2 + Drive push + Docs create/edit
-- `github/` — OAuth 2 + webhooks + commit file / PR comment (MD write-back is the core UX)
-
-**Phase 2 (90 days) — `_phase2/`:**
-- `linear/`, `gcalendar/`, `jira/`, `airtable/`, `local-fs/`
-
-**Phase 3 (180 days):**
-- Confluence, HubSpot, Figma, Zoom/Meet, Obsidian
-
-## Adding a new connector
-
-1. Copy an existing `<tool>/` directory as scaffold.
-2. Implement the four methods from `connectors/_base/connector.py`.
-3. Add pyproject.toml with the minimal vendor SDK dependency.
-4. Register OAuth start/callback in `services/connector-manager/app/oauth/<tool>.py`.
-5. Add sync task in `services/connector-manager/app/sync/tasks.py`.
-6. Add to the tool matrix in `connectors/README.md`.
-7. Add Phase + priority to the spec if the tool isn't already listed (§07).
-8. **Write integration tests** that hit a sandbox account. No mocks for connector logic — too risky.
-
-## Layout (per tool)
+## What's in here
 
 ```
 connectors/<tool>/
-├── pyproject.toml
-├── src/
-│   ├── __init__.py
-│   ├── connector.py     implements Connector
-│   ├── client.py        thin wrapper around the vendor SDK
-│   └── mapping.py       vendor object → Axis canonical type
-└── tests/
-    └── test_connector.py   uses sandbox credentials
+  src/client.py         # Imported by services. The only file that matters.
+  pyproject.toml        # Python deps for the client.
 ```
 
-## Rules
+That's it. Keep it minimal. If you find yourself adding a `connector.py` or a base protocol — stop, you're recreating the dead architecture.
 
-- **Writes are diffed before execution.** Connector returns a `{before, after}` diff; the execution layer shows it; user confirms; only then does `write()` actually fire.
-- **Never log OAuth tokens.** Even encrypted.
-- **Always take a snapshot before a destructive write** (Drive, Notion, GitHub). Store the snapshot ID in `write_actions.snapshot_id` for 30-day rollback.
-- **Connector is stateless.** All state (tokens, cursors, last-sync) lives in Postgres, owned by connector-manager.
-- **Use vendor SDKs where mature.** (`slack-sdk`, `google-api-python-client`, `pygithub`) Hand-roll HTTP only when the SDK is missing a feature.
+## Where things actually live
+
+| Thing                                   | Location                                                       |
+|-----------------------------------------|----------------------------------------------------------------|
+| Vendor API client                       | `connectors/<tool>/src/client.py`                              |
+| OAuth flow                              | `services/connector-manager/app/oauth/<tool>.py`               |
+| Tool HTTP endpoints (`/tools/<tool>/*`) | `services/connector-manager/app/routes/tools.py`               |
+| Webhook receiver                        | `services/connector-manager/app/routes/webhooks.py`            |
+| Background sync (poll/backfill)         | `services/connector-manager/app/sync/<tool>_sync.py`           |
+| Agent capability classes                | `services/agent-orchestration/app/capabilities/<tool>.py`      |
+| Frontend tool union + capability list   | `apps/web/lib/queries/connectors.ts`, `apps/web/lib/capabilities.ts` |
+
+## Adding a new connector
+
+See the steps in `connectors/README.md`. Order matters — `client.py` first, then OAuth, then routes, then capabilities, then the frontend.
 
 ## Don't
 
+- Don't reintroduce a `Connector` base class. The deleted one is in git history if you really need to look.
+- Don't put service code (DB calls, repository imports) in `client.py`. Clients only know about the vendor API.
+- Don't leave dead stubs around. If you scaffold a connector and don't get to the real implementation, delete the directory.
 - Don't call Claude from a connector. Connectors are pure I/O.
-- Don't import from `services/` — connectors are libraries, not services.
-- Don't add a new connector without user approval. Connectors have maintenance cost (§15 risk: "connector API maintenance graveyard").
 - Don't silently retry indefinitely on 4xx — bubble it up as a health-yellow signal.
