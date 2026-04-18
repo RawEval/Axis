@@ -2,7 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PromptInput } from '@axis/design-system';
+import {
+  PromptInput,
+  WritePreviewCard,
+  type TargetCandidate,
+} from '@axis/design-system';
 import { Button } from '@/components/ui';
 import { CitedResponse, type Citation } from '@/components/chat/cited-response';
 import { LiveTaskTree } from '@/components/chat/live-task-tree';
@@ -15,7 +19,11 @@ import { ApiError } from '@/lib/api';
 import { useRunAgent } from '@/lib/queries/agent';
 import { useSubmitCorrection, type CorrectionType } from '@/lib/queries/eval';
 import { useLiveEvents } from '@/lib/queries/live';
-import { useConfirmWrite, useRollbackWrite } from '@/lib/queries/writes';
+import {
+  useChooseTarget,
+  useConfirmWrite,
+  useRollbackWrite,
+} from '@/lib/queries/writes';
 
 type RunResult = {
   action_id?: string;
@@ -60,7 +68,42 @@ function ChatPageContent() {
   const submitCorrection = useSubmitCorrection();
   const confirmWrite = useConfirmWrite();
   const rollbackWrite = useRollbackWrite();
+  const chooseTarget = useChooseTarget();
   const { events, clear: clearEvents } = useLiveEvents();
+  const [chooseBusyId, setChooseBusyId] = useState<string | null>(null);
+
+  const pendingTargetPick = useMemo<{
+    writeId: string;
+    tool: string;
+    options: TargetCandidate[];
+  } | null>(() => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const ev = events[i];
+      if (ev.type !== 'write.target_pick_required') continue;
+      const payload = (ev.payload ?? {}) as Record<string, unknown>;
+      const writeId = String(payload.write_action_id ?? '');
+      if (!writeId) continue;
+      const resolved = events.slice(i + 1).some((later) => {
+        const p = (later.payload ?? {}) as Record<string, unknown>;
+        const otherId = String(p.write_action_id ?? '');
+        return (
+          otherId === writeId &&
+          (later.type === 'write.target_chosen' ||
+            later.type === 'write.preview' ||
+            later.type === 'write.confirmed' ||
+            later.type === 'write.rolled_back')
+        );
+      });
+      if (resolved) continue;
+      const options = ((payload.options ?? []) as TargetCandidate[]) ?? [];
+      return {
+        writeId,
+        tool: String(payload.tool ?? ''),
+        options,
+      };
+    }
+    return null;
+  }, [events]);
 
   const pendingPermission = useMemo<PermissionRequest | null>(() => {
     for (let i = events.length - 1; i >= 0; i--) {
@@ -138,6 +181,30 @@ function ChatPageContent() {
                   </div>
                   <LiveTaskTree events={events} />
                 </div>
+              )}
+
+              {/* Write target pick — disambiguation before send */}
+              {pendingTargetPick && (
+                <WritePreviewCard
+                  title={`${pendingTargetPick.tool} · Pick recipient`}
+                  onConfirm={() => {}}
+                  onCancel={() => {}}
+                  targetOptions={pendingTargetPick.options}
+                  chooseBusy={chooseBusyId}
+                  onChooseTarget={async (chosen) => {
+                    setChooseBusyId(chosen.id);
+                    try {
+                      await chooseTarget.mutateAsync({
+                        writeId: pendingTargetPick.writeId,
+                        chosen,
+                      });
+                    } catch {
+                      /* surface via error state in future */
+                    } finally {
+                      setChooseBusyId(null);
+                    }
+                  }}
+                />
               )}
 
               {/* Write preview */}
