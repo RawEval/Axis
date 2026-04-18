@@ -1,0 +1,27 @@
+{
+  "provider_label": "stub-hash",
+  "voyage_key_gate_passes": false,
+  "configured_model": "voyage-3",
+  "single_embed": {
+    "dim": 1024,
+    "norm": 1.0,
+    "nonzero_ratio": 0.0195,
+    "first_3": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "batch_embed": {
+    "n": 3,
+    "dims": [
+      1024,
+      1024,
+      1024
+    ]
+  },
+  "similarity": {
+    "samir_edit vs samir_update": 0.3651,
+    "samir_edit vs cat_video": 0.0
+  }
+}

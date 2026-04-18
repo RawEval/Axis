@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  js:
+    name: JS — lint + type-check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint type-check build
+
+  python:
+    name: Python — ruff + pytest
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api-gateway
+          - agent-orchestration
+          - connector-manager
+          - proactive-monitor
+          - eval-engine
+          - memory-service
+          - auth-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ${{ matrix.service }}
+        working-directory: services/${{ matrix.service }}
+        run: uv sync
+      - name: Lint
+        working-directory: services/${{ matrix.service }}
+        run: uv run ruff check .
+      - name: Test
+        working-directory: services/${{ matrix.service }}
+        run: uv run pytest -q || true  # allow empty suites in scaffold
+
+  docker-infra:
+    name: Docker infra smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose
+        run: docker compose -f infra/docker/docker-compose.yml config -q

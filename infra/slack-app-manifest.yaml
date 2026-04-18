@@ -1,0 +1,52 @@
+display_information:
+  name: Axis
+  description: Cross-tool AI agent for startup teams
+  background_color: "#0f1e3d"
+  long_description: |
+    Axis connects your Slack workspace with Notion, Gmail, Drive, and GitHub.
+    Ask questions across all your tools, get proactive alerts for unanswered
+    messages, and let the agent draft replies — all from one place.
+
+features:
+  app_home:
+    home_tab_enabled: false
+    messages_tab_enabled: false
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: Axis
+    always_online: true
+
+oauth_config:
+  redirect_urls:
+    - http://localhost:8002/oauth/slack/callback
+  scopes:
+    bot:
+      - channels:history
+      - channels:read
+      - chat:write
+      - groups:history
+      - groups:read
+      - im:history
+      - im:read
+      - reactions:read
+      - reactions:write
+      - users:read
+      - users:read.email
+      - pins:read
+      - files:read
+
+settings:
+  event_subscriptions:
+    request_url: https://your-domain.com/webhooks/slack
+    bot_events:
+      - app_mention
+      - message.channels
+      - message.groups
+      - message.im
+      - reaction_added
+      - member_joined_channel
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

@@ -1,0 +1,24 @@
+{
+    "action_id": "5415be5d-54d7-4bda-8ba1-2a8efb838ed7",
+    "composite_score": 4.3,
+    "scores": [
+        {
+            "dimension": "relevance",
+            "score": 4,
+            "reason": "A direct request for a specific deliverable (Q3 roadmap review) with a clear deadline is typically important to the user's work."
+        },
+        {
+            "dimension": "timing",
+            "score": 4,
+            "reason": "The mention is unanswered and has a near-term deadline (tomorrow), making this an appropriate time to surface it before the deadline passes."
+        },
+        {
+            "dimension": "actionability",
+            "score": 5,
+            "reason": "The user can immediately respond to confirm they'll review it, ask for clarification, or begin the review task within 30 seconds."
+        }
+    ],
+    "flagged": false,
+    "model": "claude-haiku-4-5",
+    "stub": false
+}

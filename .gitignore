@@ -1,0 +1,88 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# Node
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Env files — NEVER commit
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
+
+# Swift / Xcode
+apps/mobile-ios/build/
+apps/mobile-ios/DerivedData/
+apps/mobile-ios/Pods/
+apps/mobile-ios/.swiftpm/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Android / Gradle
+apps/mobile-android/.gradle/
+apps/mobile-android/build/
+apps/mobile-android/app/build/
+apps/mobile-android/local.properties
+apps/mobile-android/captures/
+*.iml
+
+# KMM
+packages/kmm-shared/build/
+packages/kmm-shared/.gradle/
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Secrets
+*.pem
+*.key
+!*.pub.key
+secrets/
+credentials.json
+
+# Databases
+*.sqlite
+*.db
+data/
+
+# Misc
+.DS_Store?
+tmp/
+temp/

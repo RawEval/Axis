@@ -1,0 +1,60 @@
+# Architecture Overview
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Web (Next) │    │  iOS (Swift) │    │ Android (Kt) │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │
+       └─────────┬─────────┴─────────┬─────────┘
+                 │                   │
+                 ▼                   ▼
+         ┌───────────────────────────────┐
+         │        API Gateway            │   FastAPI · WebSocket
+         │  (auth / routing / rate lim.) │
+         └───────────────┬───────────────┘
+                         │
+    ┌────────────────────┼────────────────────┐
+    │                    │                    │
+    ▼                    ▼                    ▼
+┌─────────┐       ┌────────────────┐    ┌──────────────┐
+│  Auth   │       │  Agent Orch.   │    │  Connector   │
+│ Service │       │  (LangGraph)   │    │   Manager    │
+└─────────┘       └───────┬────────┘    └──────┬───────┘
+                          │                    │
+                          ▼                    ▼
+                  ┌──────────────┐     ┌──────────────┐
+                  │  Sub-agents  │     │  Connectors  │
+                  │ (read/write/ │     │ Slack/Notion │
+                  │  research…)  │     │ Gmail/Drive… │
+                  └──────┬───────┘     └──────┬───────┘
+                         │                    │
+                         ▼                    ▼
+                  ┌──────────────┐     ┌──────────────┐
+                  │   Memory     │     │   Vendor     │
+                  │   Service    │     │    APIs      │
+                  │ Neo4j+Qdrant │     └──────────────┘
+                  └──────────────┘
+                         │
+                         ▼
+                  ┌──────────────┐     ┌──────────────┐
+                  │ Eval Engine  │────▶│  Proactive   │
+                  │ (Haiku judge)│     │   Monitor    │
+                  └──────────────┘     │   (Celery)   │
+                                       └──────┬───────┘
+                                              │
+                                              ▼
+                                       ┌──────────────┐
+                                       │ Notification │
+                                       │   Service    │
+                                       └──────────────┘
+```
+
+## Data stores
+
+| Store | Purpose |
+|---|---|
+| PostgreSQL (Supabase) | Users, connectors, actions, writes, evals, corrections |
+| Redis | Session cache, hot memory, rate limits, Celery broker |
+| Qdrant | Per-user vector store over indexed content |
+| Neo4j | Semantic memory graph (people, projects, entities) |
+| Cloudflare R2 | Document snapshots, fine-tuning dataset |

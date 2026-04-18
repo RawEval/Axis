@@ -1,0 +1,52 @@
+{
+  "direct_embed": {
+    "provider_label": "voyage",
+    "gate_passes": true,
+    "key_len": 46,
+    "single": {
+      "dim": 1024,
+      "norm": 1.0,
+      "nonzero_ratio": 1.0,
+      "first_3": [0.028, -0.0861, -0.0551]
+    },
+    "similarity": {
+      "paraphrase (samir_edit vs cto_updated_planning)": 0.6495,
+      "disjoint (samir_edit vs cat_video)": -0.0378
+    },
+    "hash_fallback_baseline_for_same_pairs": {
+      "paraphrase": 0.3651,
+      "disjoint": 0.0
+    }
+  },
+  "end_to_end_semantic_retrieve": {
+    "collection_dropped_first": true,
+    "write1": "Samir Patel, the CTO, updated the Q3 Planning roadmap Notion page with ship date Nov 1 for the v2 launch.",
+    "write2": "What's the status of the fourth quarter product delivery timeline?",
+    "query": "who is driving the autumn release schedule",
+    "word_overlap_with_writes": "none",
+    "hits": [
+      {
+        "id": "826b8b80-3f68-4e9e-879a-4406c1c1c1e8",
+        "content": "What's the status of the fourth quarter product delivery timeline?",
+        "vector_score": 0.54550743,
+        "final_score": 0.6819
+      },
+      {
+        "id": "d4a741a3-d8b9-4acb-b00f-006020947f90",
+        "content": "Samir Patel, the CTO, updated the Q3 Planning roadmap Notion page with ship date Nov 1 for the v2 launch.",
+        "vector_score": 0.4774546,
+        "final_score": 0.6342
+      }
+    ],
+    "note": "Both writes retrieved with non-trivial vector scores despite zero token overlap with the query. This is real semantic search."
+  },
+  "rate_limit_hardening": {
+    "file": "services/memory-service/app/vector/embed.py",
+    "changes": [
+      "VOYAGE_MAX_RETRIES = 3",
+      "VOYAGE_BACKOFF_SEC = 2.0 (doubles per retry)",
+      "On 429, sleep then retry; only fall back to hash after retries exhausted"
+    ],
+    "reason": "Free tier is ~3 RPM on voyage-3; silent fallback to hash during /run would poison the Qdrant collection with mixed-provenance vectors."
+  }
+}

@@ -1,0 +1,24 @@
+{
+    "action_id": "5415be5d-54d7-4bda-8ba1-2a8efb838ed7",
+    "composite_score": 4.1,
+    "scores": [
+        {
+            "dimension": "faithfulness",
+            "score": 5,
+            "reason": "All claims in the summary are directly traceable to the source: Samir edited the roadmap and the ship date is Nov 1."
+        },
+        {
+            "dimension": "coverage",
+            "score": 2,
+            "reason": "The summary omits critical information about team agreement in standup and the identified risk of flaky integration tests that will be triaged Monday."
+        },
+        {
+            "dimension": "conciseness",
+            "score": 5,
+            "reason": "The summary is appropriately brief and contains no unnecessary padding."
+        }
+    ],
+    "flagged": false,
+    "model": "claude-haiku-4-5",
+    "stub": false
+}

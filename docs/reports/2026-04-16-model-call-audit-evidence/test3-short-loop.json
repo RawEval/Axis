@@ -1,0 +1,12 @@
+{
+    "user_id": "971b106a-b7be-4609-b032-af80ded59c22",
+    "delta": "- Remember that Samir is the CTO and owns the Q3 planning work\n- Keep responses under 3 sentences\n- Always cite the Notion URL inline when referencing documents, not just the title",
+    "source_corrections": [
+        "8dd5be6f-d1fb-4861-8124-ca8d663f170f",
+        "7a136e0d-0400-40d5-aa3d-63fb4a550e46",
+        "a6c614dd-4ddd-47f1-90f2-a7a70af7bede"
+    ],
+    "model": "claude-haiku-4-5",
+    "token_count": 1158,
+    "updated_at": "2026-04-15T23:10:56.119414+00:00"
+}

@@ -1,0 +1,14 @@
+model: claude-sonnet-4-5
+tokens_used: 972
+latency_ms: 5293
+plan: ['tool_use:connector_slack_search', 'synthesise:claude-sonnet-4-5']
+citations: 0
+output: I encountered an error searching Slack. The connector returned a 500 error, which typically means there's a temporary issue with the Slack integration. You may want to try again in a moment or check that your Slack connection is still active.
+model: claude-sonnet-4-5
+tokens_used: 1521
+latency_ms: 5455
+plan: ['tool_use:activity_query', 'synthesise:claude-sonnet-4-5']
+citations: 3
+output: In the last 2 hours you had a Slack mention in #C999 ("real key test: please respond"), a message from alice in #general about the Q3 OKR doc needing review before Friday, and samir@raweval.com edited the "Q3 Planning roadmap" Notion page with draft v2 targeting a Nov 1 ship date.
+action_id: 5415be5d-54d7-4bda-8ba1-2a8efb838ed7
+---

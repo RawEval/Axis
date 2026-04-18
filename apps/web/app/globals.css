@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Axis workbench — base styles.
+ *
+ * Light theme by default. No glass, no neon, no gradients on surfaces.
+ * Typography uses system fonts via the Tailwind `font-sans` token so we
+ * never wait on a web font to paint.
+ */
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-track: transparent;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: theme('colors.canvas.DEFAULT');
+    color: theme('colors.ink.DEFAULT');
+    font-feature-settings: 'cv11', 'ss01', 'tnum';
+    font-synthesis: none;
+  }
+
+  /* Focus ring shared across the app */
+  :focus-visible {
+    outline: 2px solid theme('colors.brand.500');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Subtle scrollbar — desktop Chrome/Edge/Safari */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid theme('colors.canvas.DEFAULT');
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Tabular numerals in tables by default */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Native form inputs — neutralize browser defaults */
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* A standard panel — used everywhere instead of the old .glass */
+  .panel {
+    @apply rounded-md border border-edge bg-canvas-raised shadow-panel;
+  }
+
+  /* Section header — small caps style label over a block of content */
+  .label-caps {
+    @apply text-xs uppercase tracking-wider text-ink-tertiary;
+  }
+
+  /* Subtle row stripe for data tables */
+  .row-hover {
+    @apply hover:bg-canvas-subtle;
+  }
+}

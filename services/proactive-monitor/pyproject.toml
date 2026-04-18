@@ -1,0 +1,22 @@
+[project]
+name = "axis-proactive-monitor"
+version = "0.1.0"
+description = "Axis Proactive Monitor — background signal processing and relevance scoring"
+requires-python = ">=3.12"
+dependencies = [
+    "celery>=5.4.0",
+    "redis>=5.0.8",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "httpx>=0.27.0",
+    "qdrant-client>=1.11.0",
+    "anthropic>=0.39.0",
+    "structlog>=24.4.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3.0", "ruff>=0.5.5"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

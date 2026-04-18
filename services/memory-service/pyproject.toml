@@ -1,0 +1,28 @@
+[project]
+name = "axis-memory-service"
+version = "0.1.0"
+description = "Axis Memory Service — Neo4j graph + Qdrant vector memory"
+requires-python = ">=3.12"
+dependencies = [
+    "axis-common",
+    "fastapi>=0.112.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "neo4j>=5.24.0",
+    "qdrant-client>=1.11.0",
+    "redis>=5.0.8",
+    "anthropic>=0.39.0",
+    "structlog>=24.4.0",
+    "asyncpg>=0.30.0",
+]
+
+[tool.uv.sources]
+axis-common = { path = "../../packages/py-common", editable = true }
+
+[dependency-groups]
+dev = ["pytest>=8.3.0", "ruff>=0.5.5"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
