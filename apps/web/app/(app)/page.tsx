@@ -8,6 +8,7 @@ import {
   CardBody,
 } from '@axis/design-system';
 import { useConnectors } from '@/lib/queries/connectors';
+import { OnboardingBanner } from '@/components/home/onboarding-banner';
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -33,6 +34,8 @@ export default function HomePage() {
       <header>
         <h1 className="font-display text-display-l text-ink">{greeting()}</h1>
       </header>
+
+      <OnboardingBanner />
 
       <section aria-labelledby="running-now">
         <SectionHeader id="running-now" title="Running now" count={0} />
