@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Button, Card, Skeleton } from '@axis/design-system';
 import { PageHeader } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { rightPanel } from '@/lib/right-panel';
+import { CredentialsPanel } from './connections/credentials-panel';
 import {
   IMPLEMENTED_TOOLS,
   type ConnectorTile,
@@ -213,20 +215,48 @@ function ToolCard({
         {connected ? (
           <div className="flex items-center justify-between">
             <Badge tone="success">Connected</Badge>
-            <Button variant="ghost" size="sm" onClick={onDisconnect}>
-              Disconnect
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  rightPanel.open({
+                    title: `${tool.label} credentials`,
+                    body: <CredentialsPanel tool={tool.tool} toolLabel={tool.label} />,
+                  })
+                }
+              >
+                Manage credentials
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onDisconnect}>
+                Disconnect
+              </Button>
+            </div>
           </div>
         ) : (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onConnect}
-            loading={pending}
-            disabled={!implemented}
-          >
-            {!implemented ? 'Coming soon' : 'Connect'}
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onConnect}
+              loading={pending}
+              disabled={!implemented}
+            >
+              {!implemented ? 'Coming soon' : 'Connect'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                rightPanel.open({
+                  title: `${tool.label} credentials`,
+                  body: <CredentialsPanel tool={tool.tool} toolLabel={tool.label} />,
+                })
+              }
+            >
+              Manage credentials
+            </Button>
+          </div>
         )}
       </div>
     </Card>
