@@ -182,6 +182,46 @@ class ConnectorManagerClient:
                 return {"error": f"connector-manager returned {resp.status_code}"}
             return resp.json()
 
+    # ---------- Gmail write-path -----------------------------------------
+
+    async def gmail_search_raw(
+        self, *, user_id: str, project_id: str, query: str, limit: int = 25
+    ) -> dict[str, Any]:
+        """Raw Gmail search hits with ``payload.headers`` preserved — used
+        by the recipient resolver. The normalized ``gmail_search`` flattens
+        headers away."""
+        return await self._tool_call(
+            "gmail/search-raw",
+            user_id=user_id,
+            project_id=project_id,
+            query=query,
+            limit=limit,
+        )
+
+    async def gmail_send(
+        self, *, user_id: str, project_id: str, to: str, subject: str, body: str
+    ) -> dict[str, Any]:
+        return await self._tool_call(
+            "gmail/send",
+            user_id=user_id,
+            project_id=project_id,
+            to=to,
+            subject=subject,
+            body=body,
+        )
+
+    async def gmail_draft(
+        self, *, user_id: str, project_id: str, to: str, subject: str, body: str
+    ) -> dict[str, Any]:
+        return await self._tool_call(
+            "gmail/draft",
+            user_id=user_id,
+            project_id=project_id,
+            to=to,
+            subject=subject,
+            body=body,
+        )
+
     async def notion_append(
         self,
         *,
