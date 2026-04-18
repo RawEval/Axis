@@ -33,7 +33,26 @@ def main() -> None:
             """,
             (user_id, "slack", "connected", '{"read": true, "write": true}'),
         )
+
+        # Plan 9 — demo project for first-run UX so /projects + /chat
+        # land in a non-empty workspace. Memory lives in Neo4j/Qdrant
+        # (not Postgres) so it's seeded by the memory service, not here.
+        cur.execute(
+            """
+            INSERT INTO projects (id, user_id, name, description, is_default)
+            VALUES (%s, %s, %s, %s, TRUE)
+            ON CONFLICT (user_id, name) DO NOTHING
+            """,
+            (
+                uuid.uuid4(),
+                user_id,
+                "Demo project",
+                "Synthetic data for first-run.",
+            ),
+        )
+
         print(f"seeded user {user_id}")
+        print("seeded demo project + slack connector")
 
 
 if __name__ == "__main__":
