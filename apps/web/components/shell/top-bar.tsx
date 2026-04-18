@@ -1,54 +1,60 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { useProjectStore } from '@/lib/project-store';
-import { useProjects } from '@/lib/queries/projects';
-import { useMounted } from '@/lib/use-mounted';
-import { ProjectSwitcher } from './project-switcher';
-import { UserMenu } from './user-menu';
+import { LogOut, User } from 'lucide-react';
+import {
+  Avatar,
+  Kbd,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@axis/design-system';
+import { ThemeToggle } from './theme-toggle';
 
 export function TopBar() {
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-
   return (
-    <header className="flex h-11 flex-shrink-0 items-center justify-between border-b border-edge bg-canvas-raised px-3">
-      <div className="flex items-center gap-2">
-        <Link href="/chat" className="flex items-center gap-1.5 text-ink">
-          <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-500 text-[10px] font-bold text-white">A</span>
-          <span className="text-sm font-semibold tracking-tight">Axis</span>
-        </Link>
-        <span className="text-edge-strong">/</span>
-        <ProjectButton onClick={() => setSwitcherOpen(true)} />
-      </div>
-      <UserMenu />
-      <ProjectSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-    </header>
-  );
-}
-
-function ProjectButton({ onClick }: { onClick: () => void }) {
-  const mounted = useMounted();
-  const { data: projects } = useProjects();
-  const active = useProjectStore((s) => s.activeProject);
-
-  let label = 'Project';
-  if (mounted) {
-    if (active === 'all') label = 'All projects';
-    else if (!active || active === 'auto') label = projects?.find((p) => p.is_default)?.name ?? 'Project';
-    else label = projects?.find((p) => p.id === active)?.name ?? 'Project';
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-sm text-ink-secondary transition-colors hover:bg-canvas-subtle hover:text-ink"
+    <header
+      className="flex items-center h-12 px-4 border-b border-edge-subtle bg-canvas-surface gap-4"
+      role="banner"
     >
-      <span suppressHydrationWarning>{label}</span>
-      <svg aria-hidden width="10" height="10" viewBox="0 0 12 12" fill="none" className="text-ink-tertiary">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </button>
+      <div className="flex-1" />
+
+      <button
+        type="button"
+        aria-label="Open command palette (coming soon)"
+        aria-disabled="true"
+        className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-edge text-ink-tertiary hover:text-ink-secondary text-body-s opacity-60 cursor-not-allowed"
+      >
+        <span>Search…</span>
+        <Kbd>⌘K</Kbd>
+      </button>
+
+      <div className="flex-1 flex items-center justify-end gap-1">
+        <ThemeToggle />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="Account menu"
+            className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-canvas-elevated transition-colors"
+          >
+            <Avatar name="A" size="sm" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Account</DropdownMenuLabel>
+            <DropdownMenuItem>
+              <User size={14} aria-hidden="true" className="mr-2" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-danger data-[highlighted]:text-danger">
+              <LogOut size={14} aria-hidden="true" className="mr-2" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
   );
 }
