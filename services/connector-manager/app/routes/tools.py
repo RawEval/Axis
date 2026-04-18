@@ -459,6 +459,105 @@ def _normalize_gmail_hit(hit: dict[str, Any]) -> GmailSearchResult:
     )
 
 
+# ---- Gmail extended: raw search (for recipient resolver) + send + draft ----
+
+
+async def _get_gmail_client(user_id: str, project_id: str) -> GmailClient:
+    """Shared helper — decrypt the Gmail token and return a live client."""
+    repo = ConnectorsRepository(db.raw)
+    token_row = await repo.get_token(user_id, project_id, "gmail")
+    if token_row is None:
+        raise HTTPException(404, "gmail is not connected for this project")
+    try:
+        access_token = decrypt_token(token_row["auth_token_encrypted"])
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, "failed to decrypt gmail token") from e
+    return GmailClient(access_token=access_token)
+
+
+class GmailSearchRawRequest(BaseModel):
+    user_id: str
+    project_id: str
+    query: str = ""
+    limit: int = Field(default=25, ge=1, le=100)
+
+
+@router.post("/tools/gmail/search-raw")
+async def gmail_search_raw(body: GmailSearchRawRequest) -> dict[str, Any]:
+    """Return raw Gmail message hits (with full ``payload.headers``) so the
+    recipient resolver can extract From/To addresses. The normalized
+    ``/tools/gmail/search`` endpoint flattens those headers away, which
+    loses information the resolver needs.
+    """
+    client = await _get_gmail_client(body.user_id, body.project_id)
+    try:
+        hits = await client.search(body.query, limit=body.limit)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("gmail_search_raw_failed", error=str(e))
+        raise HTTPException(502, f"gmail api error: {e}") from e
+    return {"results": hits}
+
+
+class GmailSendRequest(BaseModel):
+    user_id: str
+    project_id: str
+    to: str
+    subject: str
+    body: str
+
+
+@router.post("/tools/gmail/send")
+async def gmail_send(body: GmailSendRequest) -> dict[str, Any]:
+    """Send an email — only called AFTER user confirmation (write gate).
+
+    Gmail send is in the ALWAYS-gated set per spec §6.2; the
+    agent-orchestration ``/writes/{id}/confirm`` endpoint is the only
+    legitimate caller.
+    """
+    client = await _get_gmail_client(body.user_id, body.project_id)
+    try:
+        result = await client.send_message(
+            to=body.to, subject=body.subject, body=body.body
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("gmail_send_failed", error=str(e))
+        raise HTTPException(502, f"gmail send error: {e}") from e
+    return {
+        "ok": True,
+        "id": result.get("id"),
+        "thread_id": result.get("threadId"),
+        "to": body.to,
+    }
+
+
+class GmailDraftRequest(BaseModel):
+    user_id: str
+    project_id: str
+    to: str
+    subject: str
+    body: str
+
+
+@router.post("/tools/gmail/draft")
+async def gmail_draft(body: GmailDraftRequest) -> dict[str, Any]:
+    """Create a draft — does not send. Drafts are reversible so the agent
+    can stage one without the strict confirmation gate that send carries.
+    """
+    client = await _get_gmail_client(body.user_id, body.project_id)
+    try:
+        result = await client.create_draft(
+            to=body.to, subject=body.subject, body=body.body
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("gmail_draft_failed", error=str(e))
+        raise HTTPException(502, f"gmail draft error: {e}") from e
+    return {
+        "ok": True,
+        "id": result.get("id"),
+        "to": body.to,
+    }
+
+
 # ---------------- Slack ----------------
 
 

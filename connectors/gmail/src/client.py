@@ -71,11 +71,7 @@ class GmailClient:
         The caller is responsible for surfacing the preview + confirmation
         per ADR 006 before invoking this method.
         """
-        mime = (
-            f"From: me\r\nTo: {to}\r\nSubject: {subject}\r\n"
-            f"MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{body}"
-        )
-        raw = base64.urlsafe_b64encode(mime.encode("utf-8")).decode("ascii").rstrip("=")
+        raw = self._build_raw_mime(to=to, subject=subject, body=body)
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
                 f"{GMAIL_API_BASE}/messages/send",
@@ -84,3 +80,28 @@ class GmailClient:
             )
             resp.raise_for_status()
             return resp.json()
+
+    async def create_draft(self, *, to: str, subject: str, body: str) -> dict[str, Any]:
+        """drafts.create — stages a Gmail draft without sending.
+
+        Drafts are cheap and reversible (the user can delete or edit before
+        sending), so the agent can create them without the strict ALWAYS-gate
+        treatment that send carries. Returns ``{id, message: {...}}``.
+        """
+        raw = self._build_raw_mime(to=to, subject=subject, body=body)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{GMAIL_API_BASE}/drafts",
+                headers={**self._headers, "Content-Type": "application/json"},
+                json={"message": {"raw": raw}},
+            )
+            resp.raise_for_status()
+            return resp.json()
+
+    @staticmethod
+    def _build_raw_mime(*, to: str, subject: str, body: str) -> str:
+        mime = (
+            f"From: me\r\nTo: {to}\r\nSubject: {subject}\r\n"
+            f"MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{body}"
+        )
+        return base64.urlsafe_b64encode(mime.encode("utf-8")).decode("ascii").rstrip("=")
