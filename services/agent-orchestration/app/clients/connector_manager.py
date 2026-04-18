@@ -182,6 +182,22 @@ class ConnectorManagerClient:
                 return {"error": f"connector-manager returned {resp.status_code}"}
             return resp.json()
 
+    # ---------- GDrive write-path ----------------------------------------
+
+    async def gdrive_search_raw(
+        self, *, user_id: str, project_id: str, query: str, limit: int = 25
+    ) -> dict[str, Any]:
+        """Raw Drive file hits with full ``mimeType``, ``modifiedTime``,
+        ``webViewLink``, ``owners`` — used by the doc resolver. The
+        normalized ``gdrive_search`` flattens those fields away."""
+        return await self._tool_call(
+            "gdrive/search-raw",
+            user_id=user_id,
+            project_id=project_id,
+            query=query,
+            limit=limit,
+        )
+
     # ---------- Gmail write-path -----------------------------------------
 
     async def gmail_search_raw(

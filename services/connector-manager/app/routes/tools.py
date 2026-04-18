@@ -397,6 +397,38 @@ def _normalize_gdrive_hit(f: dict[str, Any]) -> GDriveSearchResult:
     )
 
 
+class GDriveSearchRawRequest(BaseModel):
+    user_id: str
+    project_id: str
+    query: str = ""
+    limit: int = Field(default=25, ge=1, le=100)
+
+
+@router.post("/tools/gdrive/search-raw")
+async def gdrive_search_raw(body: GDriveSearchRawRequest) -> dict[str, Any]:
+    """Return raw Drive file hits (with full ``mimeType``, ``modifiedTime``,
+    ``webViewLink``, ``owners``) so the doc resolver can filter by mime
+    type and surface ownership context. The normalized
+    ``/tools/gdrive/search`` endpoint flattens those fields away, which
+    loses information the resolver needs.
+    """
+    repo = ConnectorsRepository(db.raw)
+    token_row = await repo.get_token(body.user_id, body.project_id, "gdrive")
+    if token_row is None:
+        raise HTTPException(404, "gdrive is not connected for this project")
+    try:
+        access_token = decrypt_token(token_row["auth_token_encrypted"])
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, "failed to decrypt gdrive token") from e
+    client = GDriveClient(access_token=access_token)
+    try:
+        files = await client.list_files(body.query, limit=body.limit)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("gdrive_search_raw_failed", error=str(e))
+        raise HTTPException(502, f"gdrive api error: {e}") from e
+    return {"results": files}
+
+
 # ---- Google Drive extended: read content + create doc ----
 
 
