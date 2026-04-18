@@ -55,3 +55,18 @@ export { CitationChip, type CitationChipProps } from './components/citation-chip
 export { PromptInput, type PromptInputProps } from './components/prompt-input';
 export { DiffViewer, type DiffViewerProps, type DiffLine, type DiffLineType } from './components/diff-viewer';
 export { WritePreviewCard, type WritePreviewCardProps, type WritePreviewMeta } from './components/write-preview-card';
+
+// Plan 7 — Axis-native primitives.
+export {
+  PermissionCard,
+  type PermissionCardProps,
+  type PermissionLifetime,
+  type PermissionDecision,
+} from './components/permission-card';
+export {
+  LiveTaskTree,
+  type LiveTaskTreeProps,
+  type StepData,
+  type StepState,
+  type StepToolCall,
+} from './components/live-task-tree';
