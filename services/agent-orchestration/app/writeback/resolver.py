@@ -106,3 +106,101 @@ def _looks_like_self(email: str, delivered_to: str) -> bool:
 def _matches_query(parsed: dict[str, str], q: str) -> bool:
     needle = q.lower()
     return needle in parsed["name"].lower() or needle in parsed["email"].lower()
+
+
+# ---------------- Slack channel resolver ----------------
+
+
+class SlackChannelResolver:
+    """Find Slack channels matching a free-text query.
+
+    Calls /tools/slack/channels via the adapter, filters by name match
+    (case-insensitive substring), returns each as a TargetCandidate
+    keyed by the Slack channel id.
+    """
+
+    def __init__(self, channels_lister) -> None:
+        self._lister = channels_lister  # callable: async () -> list[dict]
+
+    async def resolve(self, query: str, *, user_id: str, project_id: str) -> list[TargetCandidate]:
+        q = query.strip().lstrip("#").lower()
+        if not q:
+            return []
+        channels = await self._lister()
+        out: list[TargetCandidate] = []
+        for ch in channels:
+            name = (ch.get("name") or "").lower()
+            if not name or q not in name:
+                continue
+            ch_id = ch.get("id") or ""
+            if not ch_id:
+                continue
+            topic_raw = ch.get("topic")
+            if isinstance(topic_raw, dict):
+                topic = topic_raw.get("value") or ""
+            else:
+                topic = topic_raw or ""
+            members = ch.get("num_members")
+            ctx_parts: list[str] = []
+            if topic:
+                ctx_parts.append(topic[:80])
+            if isinstance(members, int):
+                ctx_parts.append(f"{members} members")
+            out.append(TargetCandidate(
+                kind="slack_channel",
+                id=ch_id,
+                label=f"#{ch.get('name')}",
+                sub_label=None,
+                context=" · ".join(ctx_parts) or None,
+                metadata={"is_private": bool(ch.get("is_private"))},
+            ))
+        # Stable: exact name first, then alphabetical
+        out.sort(key=lambda c: (0 if c.label.lower().lstrip("#") == q else 1, c.label.lower()))
+        return out
+
+
+# ---------------- GDrive doc resolver ----------------
+
+
+class GDriveDocResolver:
+    """Find Google Docs matching a free-text query.
+
+    Calls /tools/gdrive/search via the adapter, narrows to mimeType
+    application/vnd.google-apps.document, returns each as a TargetCandidate.
+    """
+
+    def __init__(self, search) -> None:
+        self._search = search  # callable: async (query: str, *, limit: int) -> list[dict]
+
+    async def resolve(self, query: str, *, user_id: str, project_id: str) -> list[TargetCandidate]:
+        q = query.strip()
+        if not q:
+            return []
+        # Drive search syntax: name contains '<q>' AND mimeType = '...document'
+        # The search adapter handles the actual API call; we just pass the query.
+        hits = await self._search(q, limit=25)
+        out: list[TargetCandidate] = []
+        for h in hits:
+            mime = h.get("mimeType") or ""
+            # Only Google Docs are appendable as plain text via append_to_doc.
+            if mime and "application/vnd.google-apps.document" not in mime:
+                continue
+            doc_id = h.get("id") or ""
+            if not doc_id:
+                continue
+            modified = h.get("modifiedTime") or h.get("modified_time")
+            owner = (h.get("owners") or [{}])[0].get("displayName") if isinstance(h.get("owners"), list) else None
+            ctx_parts: list[str] = []
+            if owner:
+                ctx_parts.append(f"owned by {owner}")
+            if modified:
+                ctx_parts.append(f"modified {modified}")
+            out.append(TargetCandidate(
+                kind="gdrive_doc",
+                id=doc_id,
+                label=h.get("name") or "(untitled doc)",
+                sub_label=h.get("webViewLink") or h.get("url"),
+                context=" · ".join(ctx_parts) or None,
+                metadata={"mime_type": mime},
+            ))
+        return out
