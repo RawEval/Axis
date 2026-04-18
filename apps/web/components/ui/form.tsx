@@ -1,5 +1,12 @@
 import clsx from 'clsx';
-import type { InputHTMLAttributes, LabelHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import type {
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  ReactNode,
+  TextareaHTMLAttributes,
+} from 'react';
+
+export { Input, type InputProps } from '@axis/design-system';
 
 const FIELD_CLS =
   'w-full rounded border border-edge-strong bg-canvas-raised px-3 py-2 text-sm text-ink ' +
@@ -7,10 +14,6 @@ const FIELD_CLS =
   'hover:border-ink-tertiary ' +
   'focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 ' +
   'disabled:cursor-not-allowed disabled:bg-canvas-subtle disabled:text-ink-disabled';
-
-export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={clsx(FIELD_CLS, className)} {...rest} />;
-}
 
 export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={clsx(FIELD_CLS, 'resize-y', className)} {...rest} />;
@@ -20,7 +23,7 @@ export function Select({
   className,
   children,
   ...rest
-}: InputHTMLAttributes<HTMLSelectElement> & { children?: React.ReactNode }) {
+}: InputHTMLAttributes<HTMLSelectElement> & { children?: ReactNode }) {
   return (
     <select className={clsx(FIELD_CLS, 'pr-8', className)} {...rest}>
       {children}
@@ -56,7 +59,7 @@ export function Field({
   hint?: string;
   error?: string;
   required?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>
