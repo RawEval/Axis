@@ -12,7 +12,7 @@ import {
 import clsx from 'clsx';
 
 export interface PromptInputProps
-  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'> {
+  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'onSubmit'> {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;

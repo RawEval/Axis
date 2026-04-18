@@ -48,3 +48,10 @@ export {
   type BreathingTone,
   type BreathingSize,
 } from './components/breathing-pulse';
+
+// Plan 5 — Axis-native primitives.
+export { AgentStateDot, type AgentStateDotProps, type AgentState } from './components/agent-state-dot';
+export { CitationChip, type CitationChipProps } from './components/citation-chip';
+export { PromptInput, type PromptInputProps } from './components/prompt-input';
+export { DiffViewer, type DiffViewerProps, type DiffLine, type DiffLineType } from './components/diff-viewer';
+export { WritePreviewCard, type WritePreviewCardProps, type WritePreviewMeta } from './components/write-preview-card';
