@@ -9,6 +9,7 @@ import {
   IMPLEMENTED_TOOLS,
   type ConnectorTile,
   type OAuthPopupMessage,
+  type Tool,
   useConnectTool,
   useConnectors,
   useDisconnectTool,
@@ -16,15 +17,15 @@ import {
 
 type Banner = { tone: 'success' | 'danger'; message: string } | null;
 
-interface Tool {
-  tool: string;
+interface ToolMeta {
+  tool: Tool;
   label: string;
   icon: string;
   color: string;
   desc: string;
 }
 
-export default function ConnectionsContent({ tools }: { tools: Tool[] }) {
+export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
   const qc = useQueryClient();
   const { data, isLoading } = useConnectors();
   const connect = useConnectTool();
@@ -132,7 +133,7 @@ export default function ConnectionsContent({ tools }: { tools: Tool[] }) {
           {tools.map((t) => {
             const tile = connectedMap.get(t.tool);
             const connected = tile?.status === 'connected';
-            const implemented = IMPLEMENTED_TOOLS.includes(t.tool as ConnectorTile['tool']);
+            const implemented = IMPLEMENTED_TOOLS.includes(t.tool);
             return (
               <ToolCard
                 key={t.tool}
@@ -140,8 +141,8 @@ export default function ConnectionsContent({ tools }: { tools: Tool[] }) {
                 tile={tile}
                 connected={connected}
                 implemented={implemented}
-                onConnect={() => onConnect(t.tool as ConnectorTile['tool'])}
-                onDisconnect={() => disconnect.mutate(t.tool as ConnectorTile['tool'])}
+                onConnect={() => onConnect(t.tool)}
+                onDisconnect={() => disconnect.mutate(t.tool)}
                 pending={connect.isPending}
               />
             );
@@ -166,7 +167,7 @@ function ToolCard({
   onDisconnect,
   pending,
 }: {
-  tool: Tool;
+  tool: ToolMeta;
   tile: ConnectorTile | undefined;
   connected: boolean;
   implemented: boolean;

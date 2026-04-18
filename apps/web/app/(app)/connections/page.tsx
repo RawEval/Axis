@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
 import ConnectionsContent from '@/components/connections-content';
+import type { Tool } from '@/lib/queries/connectors';
 
 const TOOLS: Array<{
-  tool: string;
+  tool: Tool;
   label: string;
   icon: string;
   color: string;
