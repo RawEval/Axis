@@ -70,3 +70,9 @@ export {
   type StepState,
   type StepToolCall,
 } from './components/live-task-tree';
+
+export {
+  TargetPicker,
+  type TargetPickerProps,
+  type TargetCandidate,
+} from './components/target-picker';
