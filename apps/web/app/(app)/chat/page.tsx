@@ -104,9 +104,9 @@ export default function ChatPage() {
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-6">
         {/* Live progress — only visible during a run */}
         {(run.isPending || events.length > 0) && (
-          <div className="rounded-lg border border-edge bg-canvas-raised px-4 py-3">
+          <div className="rounded-lg border border-edge bg-canvas-surface px-4 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs text-ink-tertiary">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" />
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
               Working...
             </div>
             <LiveTaskTree events={events} />
@@ -122,8 +122,8 @@ export default function ChatPage() {
           const tool = String(payload.tool ?? '');
           const confirmed = events.some((e) => e.type === 'write.confirmed');
           return (
-            <div className="rounded-lg border border-warning/30 bg-warning-bg/30 p-4">
-              <div className="mb-2 text-xs font-semibold text-warning-fg">Write preview - {tool}</div>
+            <div className="rounded-lg border border-warning/30 bg-warning/30 p-4">
+              <div className="mb-2 text-xs font-semibold text-warning">Write preview - {tool}</div>
               <DiffViewer lines={diffLines.map((l) => ({ type: l.type as 'add' | 'del' | 'eq', text: l.text }))} />
               <div className="mt-3 flex gap-2">
                 <Button variant="primary" size="sm" disabled={confirmWrite.isPending || confirmed} onClick={() => confirmWrite.mutate(writeId)}>
@@ -140,7 +140,7 @@ export default function ChatPage() {
         {/* Last result */}
         {lastResult && (
           <div className="flex flex-col gap-3">
-            <div className="rounded-lg border border-edge bg-canvas-raised p-5">
+            <div className="rounded-lg border border-edge bg-canvas-surface p-5">
               {lastResult.output ? (
                 <CitedResponse content={lastResult.output} citations={lastResult.citations ?? []} />
               ) : (
@@ -151,13 +151,13 @@ export default function ChatPage() {
             {/* Meta row */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               {typeof lastResult.latency_ms === 'number' && (
-                <span className="rounded bg-canvas-subtle px-2 py-0.5 text-ink-tertiary">{lastResult.latency_ms}ms</span>
+                <span className="rounded bg-canvas-elevated px-2 py-0.5 text-ink-tertiary">{lastResult.latency_ms}ms</span>
               )}
               {typeof lastResult.tokens_used === 'number' && (
-                <span className="rounded bg-canvas-subtle px-2 py-0.5 text-ink-tertiary">{lastResult.tokens_used} tokens</span>
+                <span className="rounded bg-canvas-elevated px-2 py-0.5 text-ink-tertiary">{lastResult.tokens_used} tokens</span>
               )}
               {citationCount > 0 && (
-                <span className="rounded bg-brand-50 px-2 py-0.5 text-brand-600">{citationCount} source{citationCount === 1 ? '' : 's'}</span>
+                <span className="rounded bg-accent-subtle px-2 py-0.5 text-accent">{citationCount} source{citationCount === 1 ? '' : 's'}</span>
               )}
               <button
                 className="ml-auto text-ink-tertiary transition-colors hover:text-ink"
@@ -169,12 +169,12 @@ export default function ChatPage() {
 
             {/* Correction form */}
             {correctionOpen && lastResult.action_id && (
-              <div className="rounded-lg border border-edge bg-canvas-subtle p-4">
+              <div className="rounded-lg border border-edge bg-canvas-elevated p-4">
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {(['wrong', 'rewrite', 'memory_update', 'scope'] as CorrectionType[]).map((t) => (
                     <button
                       key={t}
-                      className={`rounded-md px-2.5 py-1 text-xs transition-colors ${correctionType === t ? 'bg-brand-500 text-white' : 'bg-canvas-raised text-ink-secondary hover:bg-canvas-sunken'}`}
+                      className={`rounded-md px-2.5 py-1 text-xs transition-colors ${correctionType === t ? 'bg-accent text-white' : 'bg-canvas-surface text-ink-secondary hover:bg-canvas-sunken'}`}
                       onClick={() => setCorrectionType(t)}
                     >
                       {t.replace('_', ' ')}
@@ -186,7 +186,7 @@ export default function ChatPage() {
                   onChange={(e) => setCorrectionNote(e.target.value)}
                   rows={2}
                   placeholder="What should be different next time?"
-                  className="mb-3 w-full rounded-md border border-edge-strong bg-canvas-raised px-3 py-2 text-sm text-ink outline-none focus:border-brand-500"
+                  className="mb-3 w-full rounded-md border border-edge-strong bg-canvas-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent"
                 />
                 <div className="flex items-center gap-2">
                   <Button
@@ -228,15 +228,15 @@ export default function ChatPage() {
       </div>
 
       {/* Command bar — pinned to bottom */}
-      <div className="sticky bottom-0 border-t border-edge bg-canvas-raised px-6 py-4">
+      <div className="sticky bottom-0 border-t border-edge bg-canvas-surface px-6 py-4">
         <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
-          <div className="flex items-end gap-3 rounded-xl border border-edge-strong bg-canvas p-3 shadow-panel focus-within:border-brand-500 focus-within:shadow-popover transition-shadow">
+          <div className="flex items-end gap-3 rounded-xl border border-edge-strong bg-canvas p-3 shadow-e1 focus-within:border-accent focus-within:shadow-e2 transition-shadow">
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={1}
               placeholder="Ask Axis anything..."
-              className="flex-1 resize-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-disabled"
+              className="flex-1 resize-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-tertiary"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSubmit(e); }
               }}
@@ -254,7 +254,7 @@ export default function ChatPage() {
             </div>
           </div>
           {error && (
-            <div className="mt-2 rounded-md border border-danger/20 bg-danger-bg px-3 py-2 text-xs text-danger-fg">
+            <div className="mt-2 rounded-md border border-danger/20 bg-danger/10 px-3 py-2 text-xs text-danger">
               {error}
             </div>
           )}

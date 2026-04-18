@@ -11,7 +11,7 @@ export type TaskNode = {
 
 const STATUS_DOT: Record<TaskNode['status'], string> = {
   pending: 'bg-ink-disabled',
-  running: 'bg-brand-500 animate-pulse',
+  running: 'bg-accent animate-pulse',
   done: 'bg-success',
   error: 'bg-danger',
 };

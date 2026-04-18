@@ -74,7 +74,7 @@ export default function NewProjectPage() {
               />
             </Field>
             {error && (
-              <div className="rounded border border-danger/20 bg-danger-bg px-3 py-2 text-xs text-danger-fg">
+              <div className="rounded border border-danger/20 bg-danger/10 px-3 py-2 text-xs text-danger">
                 {error}
               </div>
             )}

@@ -9,11 +9,11 @@ import type {
 export { Input, type InputProps } from '@axis/design-system';
 
 const FIELD_CLS =
-  'w-full rounded border border-edge-strong bg-canvas-raised px-3 py-2 text-sm text-ink ' +
-  'placeholder:text-ink-disabled transition-colors ' +
+  'w-full rounded border border-edge-strong bg-canvas-surface px-3 py-2 text-sm text-ink ' +
+  'placeholder:text-ink-tertiary transition-colors ' +
   'hover:border-ink-tertiary ' +
-  'focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 ' +
-  'disabled:cursor-not-allowed disabled:bg-canvas-subtle disabled:text-ink-disabled';
+  'focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent ' +
+  'disabled:cursor-not-allowed disabled:bg-canvas-elevated disabled:text-ink-tertiary';
 
 export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={clsx(FIELD_CLS, 'resize-y', className)} {...rest} />;

@@ -48,7 +48,7 @@ export function PermissionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-lg border border-canvas-subtle bg-canvas-raised p-5 shadow-xl">
+      <div className="mx-4 w-full max-w-md rounded-lg border border-canvas-subtle bg-canvas-surface p-5 shadow-xl">
         <div className="mb-3 flex items-center gap-2">
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-warning" />
           <h2 className="text-sm font-semibold text-ink">

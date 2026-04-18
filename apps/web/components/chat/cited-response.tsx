@@ -85,8 +85,8 @@ export function CitedResponse({
                 className={clsx(
                   'cursor-pointer rounded px-0.5 transition-colors',
                   active
-                    ? 'bg-brand-200 text-brand-700'
-                    : 'bg-brand-50 text-brand-700 hover:bg-brand-100',
+                    ? 'bg-accent-subtle text-accent'
+                    : 'bg-accent-subtle text-accent hover:bg-accent-subtle',
                 )}
                 onMouseEnter={() => setHoveredCitationId(cid)}
                 onMouseLeave={() => setHoveredCitationId(null)}
@@ -120,8 +120,8 @@ export function CitedResponse({
                   className={clsx(
                     'rounded border px-3 py-2 transition-colors',
                     active
-                      ? 'border-brand-500 bg-brand-50'
-                      : 'border-edge bg-canvas-raised',
+                      ? 'border-accent bg-accent-subtle'
+                      : 'border-edge bg-canvas-surface',
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -135,7 +135,7 @@ export function CitedResponse({
                             href={c.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="truncate text-sm font-medium text-brand-700 hover:underline"
+                            className="truncate text-sm font-medium text-accent hover:underline"
                           >
                             {c.title || c.url}
                           </a>

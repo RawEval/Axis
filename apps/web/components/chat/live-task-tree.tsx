@@ -36,7 +36,7 @@ export function LiveTaskTree({ events }: { events: LiveEvent[] }) {
       ))}
       {running && steps.every((s) => s.status !== 'running') && (
         <div className="flex items-center gap-2 text-ink-tertiary">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-brand-500" />
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
           Thinking…
         </div>
       )}
@@ -107,7 +107,7 @@ function accumulateSteps(events: LiveEvent[]): StepCard[] {
 function StepRow({ step }: { step: StepCard }) {
   const { status } = step;
   const dot = {
-    running: 'bg-brand-500 animate-pulse',
+    running: 'bg-accent animate-pulse',
     done: 'bg-success',
     error: 'bg-danger',
     denied: 'bg-warning',

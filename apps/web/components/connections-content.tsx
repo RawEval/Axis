@@ -115,8 +115,8 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
       {banner && (
         <div className={
           banner.tone === 'success'
-            ? 'rounded-lg border border-success/20 bg-success-bg px-4 py-3 text-sm text-success-fg'
-            : 'rounded-lg border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger-fg'
+            ? 'rounded-lg border border-success/20 bg-success/10 px-4 py-3 text-sm text-success'
+            : 'rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger'
         }>
           {banner.message}
         </div>
@@ -125,7 +125,7 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl border border-edge bg-canvas-raised" />
+            <div key={i} className="h-40 animate-pulse rounded-xl border border-edge bg-canvas-surface" />
           ))}
         </div>
       ) : (
@@ -152,7 +152,7 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
 
       <p className="text-xs text-ink-tertiary">
         Using your own OAuth app?{' '}
-        <a href="/credentials" className="text-brand-500 hover:underline">Configure credentials</a>
+        <a href="/credentials" className="text-accent hover:underline">Configure credentials</a>
       </p>
     </div>
   );
@@ -176,7 +176,7 @@ function ToolCard({
   pending: boolean;
 }) {
   return (
-    <div className="group relative flex flex-col rounded-xl border border-edge bg-canvas-raised p-5 shadow-panel transition-shadow hover:shadow-popover">
+    <div className="group relative flex flex-col rounded-xl border border-edge bg-canvas-surface p-5 shadow-e1 transition-shadow hover:shadow-e2">
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold text-white ${tool.color}`}>
@@ -193,7 +193,7 @@ function ToolCard({
       </div>
 
       {connected && tile && (
-        <div className="mb-3 rounded-md bg-canvas-subtle px-3 py-2 text-xs text-ink-secondary">
+        <div className="mb-3 rounded-md bg-canvas-elevated px-3 py-2 text-xs text-ink-secondary">
           <div className="flex items-center justify-between">
             <span className="font-medium">{tile.workspace_name || 'Connected'}</span>
             <Badge tone={tile.health === 'green' ? 'success' : tile.health === 'yellow' ? 'warning' : 'neutral'}>

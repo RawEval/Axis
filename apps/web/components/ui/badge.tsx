@@ -9,12 +9,12 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const TONES: Record<Tone, string> = {
-  neutral: 'bg-canvas-subtle border-edge text-ink-secondary',
-  info: 'bg-info-bg border-info/20 text-info-fg',
-  success: 'bg-success-bg border-success/20 text-success-fg',
-  warning: 'bg-warning-bg border-warning/30 text-warning-fg',
-  danger: 'bg-danger-bg border-danger/20 text-danger-fg',
-  brand: 'bg-brand-50 border-brand-200 text-brand-700',
+  neutral: 'bg-canvas-elevated border-edge text-ink-secondary',
+  info: 'bg-info/10 border-info/20 text-info',
+  success: 'bg-success/10 border-success/20 text-success',
+  warning: 'bg-warning/10 border-warning/30 text-warning',
+  danger: 'bg-danger/10 border-danger/20 text-danger',
+  brand: 'bg-accent-subtle border-accent-subtle text-accent',
 };
 
 const DOT_TONES: Record<Tone, string> = {
@@ -23,7 +23,7 @@ const DOT_TONES: Record<Tone, string> = {
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',
-  brand: 'bg-brand-500',
+  brand: 'bg-accent',
 };
 
 export function Badge({ tone = 'neutral', dot, className, children, ...rest }: BadgeProps) {

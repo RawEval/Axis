@@ -100,7 +100,7 @@ export default function MemoryPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-6 animate-pulse rounded bg-canvas-subtle"
+                  className="h-6 animate-pulse rounded bg-canvas-elevated"
                 />
               ))}
             </div>

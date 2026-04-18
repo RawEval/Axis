@@ -11,7 +11,7 @@ import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 
 export function Table({ className, ...rest }: HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="overflow-hidden rounded-md border border-edge bg-canvas-raised shadow-panel">
+    <div className="overflow-hidden rounded-md border border-edge bg-canvas-surface shadow-e1">
       <table className={clsx('w-full text-left text-sm text-ink', className)} {...rest} />
     </div>
   );
@@ -20,7 +20,7 @@ export function Table({ className, ...rest }: HTMLAttributes<HTMLTableElement>) 
 export function THead({ className, ...rest }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={clsx('border-b border-edge bg-canvas-subtle text-ink-secondary', className)}
+      className={clsx('border-b border-edge bg-canvas-elevated text-ink-secondary', className)}
       {...rest}
     />
   );

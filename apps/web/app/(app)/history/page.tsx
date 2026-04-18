@@ -11,7 +11,7 @@ export default function HistoryPage() {
       <PageHeader title="History" />
 
       {error && (
-        <div className="rounded-lg border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger-fg">
+        <div className="rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
           Failed to load history
         </div>
       )}
@@ -19,11 +19,11 @@ export default function HistoryPage() {
       {isLoading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-lg border border-edge bg-canvas-raised" />
+            <div key={i} className="h-16 animate-pulse rounded-lg border border-edge bg-canvas-surface" />
           ))}
         </div>
       ) : !data || data.length === 0 ? (
-        <div className="rounded-lg border border-edge bg-canvas-raised px-5 py-8 text-center">
+        <div className="rounded-lg border border-edge bg-canvas-surface px-5 py-8 text-center">
           <div className="mb-1 text-sm font-medium text-ink">No runs yet</div>
           <div className="text-xs text-ink-tertiary">Ask Axis a question to see your history here.</div>
           <Button variant="secondary" size="sm" className="mt-3" onClick={() => (window.location.href = '/chat')}>
@@ -40,9 +40,9 @@ export default function HistoryPage() {
             return (
               <div
                 key={a.id}
-                className="flex items-center gap-3 rounded-lg border border-edge bg-canvas-raised px-4 py-3 transition-colors hover:bg-canvas-subtle"
+                className="flex items-center gap-3 rounded-lg border border-edge bg-canvas-surface px-4 py-3 transition-colors hover:bg-canvas-elevated"
               >
-                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-brand-50 text-xs font-bold text-brand-600">
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-accent-subtle text-xs font-bold text-accent">
                   Q
                 </div>
                 <div className="flex-1 min-w-0">
@@ -50,7 +50,7 @@ export default function HistoryPage() {
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3 text-xs">
                   {tokens > 0 && (
-                    <span className="rounded bg-canvas-subtle px-2 py-0.5 text-ink-tertiary">{tokens} tok</span>
+                    <span className="rounded bg-canvas-elevated px-2 py-0.5 text-ink-tertiary">{tokens} tok</span>
                   )}
                   <Badge tone="success">done</Badge>
                   <span className="text-ink-tertiary">{new Date(a.timestamp).toLocaleString()}</span>

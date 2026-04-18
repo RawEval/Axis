@@ -47,11 +47,11 @@ export default function FeedPage() {
         {loading ? (
           <div className="space-y-2">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg border border-edge bg-canvas-raised" />
+              <div key={i} className="h-14 animate-pulse rounded-lg border border-edge bg-canvas-surface" />
             ))}
           </div>
         ) : !hasEvents ? (
-          <div className="rounded-lg border border-edge bg-canvas-raised px-5 py-8 text-center">
+          <div className="rounded-lg border border-edge bg-canvas-surface px-5 py-8 text-center">
             <div className="mb-1 text-sm font-medium text-ink">No activity yet</div>
             <div className="text-xs text-ink-tertiary">Connect a tool and the activity stream will populate here.</div>
             <Button variant="secondary" size="sm" className="mt-3" onClick={() => (window.location.href = '/connections')}>
@@ -79,7 +79,7 @@ function SurfaceCard({
 }) {
   const pct = surface.confidence_score != null ? `${Math.round(surface.confidence_score * 100)}%` : null;
   return (
-    <div className="flex items-start gap-4 rounded-lg border border-warning/20 bg-warning-bg/20 px-4 py-3">
+    <div className="flex items-start gap-4 rounded-lg border border-warning/20 bg-warning/20 px-4 py-3">
       <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-warning text-xs text-white">!</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-ink">{surface.title}</div>
@@ -106,7 +106,7 @@ function SurfaceCard({
 function EventRow({ event }: { event: ActivityEvent }) {
   const sourceColor = SOURCE_COLORS[event.source] ?? 'bg-ink-disabled';
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-edge bg-canvas-raised px-4 py-3 transition-colors hover:bg-canvas-subtle">
+    <div className="flex items-center gap-3 rounded-lg border border-edge bg-canvas-surface px-4 py-3 transition-colors hover:bg-canvas-elevated">
       <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white ${sourceColor}`}>
         {event.source.charAt(0).toUpperCase()}
       </div>

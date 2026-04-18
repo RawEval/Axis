@@ -145,7 +145,7 @@ function CredentialsPanel({
           href={tool.helpUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-1 inline-block text-xs text-brand-500 hover:text-brand-600"
+          className="mt-1 inline-block text-xs text-accent hover:text-accent"
         >
           Open {tool.label} developer console ↗
         </a>
@@ -182,7 +182,7 @@ function CredentialsPanel({
           </form>
         )}
 
-        {message && <div className="mt-3 text-xs text-success-fg">{message}</div>}
+        {message && <div className="mt-3 text-xs text-success">{message}</div>}
         {error && <div className="mt-3 text-xs text-danger">{error}</div>}
       </PanelBody>
     </Panel>

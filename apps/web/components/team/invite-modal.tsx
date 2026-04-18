@@ -118,7 +118,7 @@ export function InviteModal({
               Share this link with your teammate. They&apos;ll be prompted to sign in
               or create an account with the matching email.
             </p>
-            <div className="flex items-center gap-2 rounded border border-edge bg-canvas-subtle px-3 py-2">
+            <div className="flex items-center gap-2 rounded border border-edge bg-canvas-elevated px-3 py-2">
               <code className="flex-1 truncate font-mono text-xs text-ink">
                 {acceptUrl}
               </code>
@@ -167,7 +167,7 @@ export function InviteModal({
               />
             </Field>
             {error && (
-              <div className="rounded border border-danger/20 bg-danger-bg px-3 py-2 text-xs text-danger-fg">
+              <div className="rounded border border-danger/20 bg-danger/10 px-3 py-2 text-xs text-danger">
                 {error}
               </div>
             )}

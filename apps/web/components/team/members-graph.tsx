@@ -49,7 +49,7 @@ export function MembersGraph({
 function RootNode({ name }: { name: string }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="rounded-md border border-edge-strong bg-canvas-subtle px-4 py-2 text-center">
+      <div className="rounded-md border border-edge-strong bg-canvas-elevated px-4 py-2 text-center">
         <div className="label-caps">Organization</div>
         <div className="mt-0.5 text-sm font-semibold text-ink">{name}</div>
       </div>
@@ -66,11 +66,11 @@ function MemberNode({ member }: { member: Member }) {
   return (
     <div
       className={clsx(
-        'flex w-48 flex-col items-center rounded-md border bg-canvas-raised px-3 py-2 shadow-panel transition-colors',
-        member.role === 'owner' ? 'border-brand-200' : 'border-edge',
+        'flex w-48 flex-col items-center rounded-md border bg-canvas-surface px-3 py-2 shadow-e1 transition-colors',
+        member.role === 'owner' ? 'border-accent-subtle' : 'border-edge',
       )}
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-edge-strong bg-canvas-subtle text-xs font-semibold text-ink-secondary">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-edge-strong bg-canvas-elevated text-xs font-semibold text-ink-secondary">
         {displayName.charAt(0).toUpperCase()}
       </div>
       <div className="mt-1.5 w-full truncate text-center text-sm font-medium text-ink">

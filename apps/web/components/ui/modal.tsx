@@ -50,7 +50,7 @@ export function Modal({
       <div
         onClick={(e) => e.stopPropagation()}
         className={clsx(
-          'w-full rounded-md border border-edge bg-canvas-raised shadow-popover',
+          'w-full rounded-md border border-edge bg-canvas-surface shadow-e2',
           widthClass,
         )}
       >
@@ -63,7 +63,7 @@ export function Modal({
         )}
         <div>{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-edge bg-canvas-subtle px-5 py-3">
+          <div className="flex items-center justify-end gap-2 border-t border-edge bg-canvas-elevated px-5 py-3">
             {footer}
           </div>
         )}
