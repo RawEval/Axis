@@ -1,144 +1,114 @@
 import type { Config } from 'tailwindcss';
 
-/**
- * Axis workbench theme — professional light palette.
- *
- * Inspiration: Tableau, Atlassian, Retool, Linear, Looker.
- * Principle: data-dense, high contrast, conservative, reliable.
- *
- * - Sidebar (navigation rail):  deep navy, always dark
- * - Content area:               near-white slate
- * - Text:                       near-black for body, slate for secondary
- * - Accent:                     single professional blue — used sparingly
- * - Semantic:                   green/amber/red at AA contrast against white
- *
- * No glass, no blur, no neon, no gradients on surfaces.
- */
 const config: Config = {
   content: [
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
+    './lib/**/*.{ts,tsx}',
     '../../packages/design-system/src/**/*.{ts,tsx}',
   ],
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        // Content area — the "paper"
         canvas: {
-          DEFAULT: '#f7f8fa',   // page background
-          raised: '#ffffff',    // cards / panels
-          subtle: '#eef1f6',    // hovers, zebra rows
-          sunken: '#e5e9f0',    // input fields
+          DEFAULT: 'var(--color-bg-canvas)',
+          surface: 'var(--color-bg-surface)',
+          elevated: 'var(--color-bg-elevated)',
+          sunken: 'var(--color-bg-sunken)',
         },
-        // Text
-        ink: {
-          DEFAULT: '#0f172a',   // primary text — near-black
-          secondary: '#475569', // secondary text — slate-600
-          tertiary: '#64748b',  // labels, meta — slate-500
-          disabled: '#94a3b8',  // disabled — slate-400
-          onDark: '#e2e8f0',    // text on navy sidebar
-          onDarkMuted: '#94a3b8',
-        },
-        // Borders
         edge: {
-          DEFAULT: '#e2e8f0',   // standard border — slate-200
-          strong: '#cbd5e1',    // input border, emphasized — slate-300
-          subtle: '#eef1f6',    // hairline — slate-100
-          onDark: '#1e293b',    // border on navy — slate-800
+          DEFAULT: 'var(--color-border-default)',
+          subtle: 'var(--color-border-subtle)',
+          strong: 'var(--color-border-strong)',
         },
-        // Navy sidebar / header
-        nav: {
-          DEFAULT: '#0f1e3d',   // deep navy sidebar
-          hover: '#1a2c52',
-          active: '#243b6b',
-          border: '#1e293b',
+        ink: {
+          DEFAULT: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          tertiary: 'var(--color-text-tertiary)',
+          inverse: 'var(--color-text-inverse)',
         },
-        // Single professional accent — a conservative Tableau-ish blue
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          500: '#2563eb',       // primary — blue-600
-          600: '#1d4ed8',       // hover — blue-700
-          700: '#1e40af',
+        accent: {
+          DEFAULT: 'var(--color-accent-primary)',
+          hover: 'var(--color-accent-hover)',
+          subtle: 'var(--color-accent-subtle)',
+          on: 'var(--color-accent-on)',
         },
-        // Semantic colors — all AA-contrast against canvas
-        success: {
-          DEFAULT: '#16a34a',    // green-600
-          bg: '#dcfce7',         // green-100
-          fg: '#14532d',         // green-900
-        },
-        warning: {
-          DEFAULT: '#d97706',    // amber-600
-          bg: '#fef3c7',
-          fg: '#78350f',
-        },
-        danger: {
-          DEFAULT: '#dc2626',    // red-600
-          bg: '#fee2e2',
-          fg: '#7f1d1d',
-        },
-        info: {
-          DEFAULT: '#0284c7',    // sky-600
-          bg: '#e0f2fe',
-          fg: '#0c4a6e',
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
+        danger: 'var(--color-danger)',
+        info: 'var(--color-info)',
+        agent: {
+          thinking: 'var(--color-agent-thinking)',
+          running: 'var(--color-agent-running)',
+          awaiting: 'var(--color-agent-awaiting)',
+          recovered: 'var(--color-agent-recovered)',
+          blocked: 'var(--color-agent-blocked)',
+          background: 'var(--color-agent-background)',
         },
       },
       fontFamily: {
-        sans: [
-          'Inter',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          'sans-serif',
-        ],
-        mono: [
-          '"JetBrains Mono"',
-          '"SF Mono"',
-          'Menlo',
-          'Monaco',
-          'Consolas',
-          'monospace',
-        ],
+        display: ['var(--font-display)', 'Inter Display', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Inter', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        'xs': ['11px', { lineHeight: '16px', letterSpacing: '0.01em' }],
-        'sm': ['13px', { lineHeight: '20px' }],
-        'base': ['14px', { lineHeight: '21px' }],
-        'lg': ['16px', { lineHeight: '24px' }],
-        'xl': ['18px', { lineHeight: '26px', letterSpacing: '-0.01em' }],
-        '2xl': ['22px', { lineHeight: '30px', letterSpacing: '-0.015em' }],
-        '3xl': ['28px', { lineHeight: '34px', letterSpacing: '-0.02em' }],
-      },
-      borderRadius: {
-        none: '0',
-        sm: '3px',
-        DEFAULT: '4px',
-        md: '6px',
-        lg: '8px',
-        xl: '12px',
+        'display-xl': ['48px', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '500' }],
+        'display-l':  ['36px', { lineHeight: '1.10', letterSpacing: '-0.025em', fontWeight: '500' }],
+        'display-m':  ['28px', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '500' }],
+        'heading-1':  ['22px', { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'heading-2':  ['18px', { lineHeight: '1.30', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'heading-3':  ['15px', { lineHeight: '1.35', letterSpacing: '-0.005em', fontWeight: '600' }],
+        'body-l':     ['16px', { lineHeight: '1.55' }],
+        'body':       ['14px', { lineHeight: '1.50' }],
+        'body-s':     ['13px', { lineHeight: '1.45' }],
+        'caption':    ['12px', { lineHeight: '1.40' }],
+        'micro':      ['11px', { lineHeight: '1.35', letterSpacing: '0.04em', fontWeight: '500' }],
+        'mono-l':     ['14px', { lineHeight: '1.50' }],
+        'mono':       ['13px', { lineHeight: '1.50' }],
+        'mono-s':     ['12px', { lineHeight: '1.45' }],
+        'kbd':        ['11px', { lineHeight: '1.00', letterSpacing: '0.02em', fontWeight: '500' }],
       },
       spacing: {
         '0.5': '2px',
         '1': '4px',
-        '1.5': '6px',
         '2': '8px',
-        '2.5': '10px',
         '3': '12px',
         '4': '16px',
         '5': '20px',
         '6': '24px',
         '8': '32px',
         '10': '40px',
-        '12': '48px',
+        '14': '56px',
+        '20': '80px',
+      },
+      borderRadius: {
+        none: '0',
+        xs: '4px',
+        sm: '6px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        full: '999px',
       },
       boxShadow: {
-        'sm-strong': '0 1px 2px 0 rgba(15, 23, 42, 0.08)',
-        'panel': '0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px 0 rgba(15, 23, 42, 0.04)',
-        'popover': '0 8px 16px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.06)',
+        'e1': '0 1px 2px rgba(14,14,16,0.05)',
+        'e2': '0 1px 2px rgba(14,14,16,0.05), 0 2px 4px rgba(14,14,16,0.04)',
+        'e3': '0 20px 40px rgba(14,14,16,0.12)',
+      },
+      keyframes: {
+        breathe: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.92' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        breathe: 'breathe 2400ms ease-in-out infinite',
+        shimmer: 'shimmer 1400ms linear infinite',
       },
     },
   },
