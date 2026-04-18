@@ -7,17 +7,26 @@
   "scripts": {
     "lint": "echo 'no lint yet'",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist .turbo"
+    "clean": "rm -rf dist .turbo",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "clsx": "^2.1.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.0",
     "@types/react": "^18.3.3",
+    "@vitejs/plugin-react": "^4.3.0",
+    "jsdom": "^25.0.0",
     "react": "18.3.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=18",
+    "framer-motion": ">=11"
   }
 }
