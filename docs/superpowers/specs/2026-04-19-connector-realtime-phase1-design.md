@@ -44,7 +44,7 @@ ADR 009 positions Axis as **the proactive workspace layer for teams** — softwa
 
 - Webhook ingestion infrastructure (public webhook endpoint in `api-gateway`, signature verification, replay/dedup, subscription renewal cron for Drive/Gmail watch channels, dev tunneling). Deferred to Phase 2.
 - Proactive push notifications fired without a user query. Deferred — these depend on the webhook layer and sit naturally with the use-case-driven feature work.
-- New connectors. Phase 1 covers parity for the existing five plus Linear (which appears in capabilities but lacks a worker today).
+- New connectors. Phase 1 covers parity for the **five existing connectors only**: Slack, Notion, Gmail, GDrive, GitHub. Linear is name-checked in the activity.query source enum but has no connector code (no `connectors/linear/`, no OAuth, no client). Adding Linear is a separate, larger effort that shouldn't ride along with this rewrite.
 
 ## 4. Architecture overview
 
@@ -91,12 +91,12 @@ Key properties:
 
 After Phase 1, every connector exposes the same capability shape:
 
-| Capability | Slack | Notion | Gmail | GDrive | GitHub | Linear |
-|---|---|---|---|---|---|---|
-| `connector.<X>.recent_activity` *(time-windowed feed)* | new | fixed | new | new | new | new |
-| `connector.<X>.search` *(keyword)* | exists | exists | exists | exists | exists | new |
-| `connector.<X>.freshen` *(force live sync now)* | new | new | new | new | new | new |
-| Background poll → `activity_events` | new | fixed | new | new | new | new |
+| Capability | Slack | Notion | Gmail | GDrive | GitHub |
+|---|---|---|---|---|---|
+| `connector.<X>.recent_activity` *(time-windowed feed)* | new | fixed | new | new | new |
+| `connector.<X>.search` *(keyword)* | exists | exists | exists | exists | exists |
+| `connector.<X>.freshen` *(force live sync now)* | new | new | new | new | new |
+| Background poll → `activity_events` | new | fixed | new | new | new |
 
 ### 5.1 `recent_activity` contract
 
@@ -209,7 +209,6 @@ The cron loop (`services/connector-manager/app/sync/scheduler.py`) and the `/too
 | **Gmail** | `users.history.list` with `startHistoryId = cursor.history_id`. On `404 NotFound` (history expired), fall back to `users.messages.list` with `q="newer_than:1d"` and re-anchor `history_id` from latest message | `history_id` |
 | **GDrive** | `changes.list` with `pageToken = cursor.page_token`. Refresh `pageToken` from `changes.getStartPageToken` if expired | `page_token` |
 | **GitHub** | `users/{user}/events` (public events) + per-installation `repos/{repo}/events` for connected repos, filtered by `id > cursor.last_event_id` | `last_event_id` |
-| **Linear** | GraphQL `viewer.assignedIssues(filter: {updatedAt: {gt: cursor.updated_at}})` + `viewer.subscribedIssues` | `updated_at` of newest seen issue |
 
 ### 6.5 Notion-specific fix (defect #2)
 
