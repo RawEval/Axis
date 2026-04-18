@@ -3,14 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import {
-  Button,
-  Field,
-  Input,
-  Panel,
-  PanelBody,
-  PanelHeader,
-} from '@/components/ui';
+import { Button } from '@axis/design-system';
+import { Field, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useRegister } from '@/lib/queries/auth';
 
@@ -26,7 +20,7 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     if (password.length < 12) {
-      setError('password must be at least 12 characters');
+      setError('Password must be at least 12 characters.');
       return;
     }
     try {
@@ -38,70 +32,75 @@ export default function SignupPage() {
         err instanceof ApiError
           ? typeof err.detail === 'string'
             ? err.detail
-            : 'signup failed'
-          : 'signup failed',
+            : 'Signup failed.'
+          : 'Signup failed.',
       );
     }
   };
 
   return (
-    <Panel>
-      <PanelHeader>
-        <div>
-          <div className="text-base font-semibold text-ink">Create account</div>
-          <div className="text-xs text-ink-tertiary">Start with a 14-day trial. No card.</div>
-        </div>
-      </PanelHeader>
-      <form onSubmit={onSubmit}>
-        <PanelBody className="space-y-4">
-          <Field label="Name">
-            <Input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Full name"
-            />
-          </Field>
-          <Field label="Work email" required>
-            <Input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Field>
-          <Field label="Password" hint="Minimum 12 characters." required>
-            <Input
-              type="password"
-              required
-              minLength={12}
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Field>
-          {error && (
-            <div className="rounded border border-danger/20 bg-danger-bg px-3 py-2 text-xs text-danger-fg">
-              {error}
-            </div>
-          )}
-          <Button
-            type="submit"
-            size="md"
-            className="w-full"
-            disabled={register.isPending}
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h1 className="font-display text-display-m text-ink">Create your account</h1>
+        <p className="text-body text-ink-secondary">Work email recommended.</p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <Field label="Name">
+          <Input
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+          />
+        </Field>
+
+        <Field label="Work email" required>
+          <Input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+          />
+        </Field>
+
+        <Field label="Password" hint="Minimum 12 characters." required>
+          <Input
+            type="password"
+            required
+            minLength={12}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-body-s text-danger"
           >
-            {register.isPending ? 'Creating account…' : 'Create account'}
-          </Button>
-          <div className="text-center text-xs text-ink-tertiary">
-            Have an account?{' '}
-            <Link href="/login" className="text-brand-500 hover:text-brand-600">
-              Sign in
-            </Link>
+            {error}
           </div>
-        </PanelBody>
+        )}
+
+        <Button type="submit" size="md" className="w-full" loading={register.isPending}>
+          Create account
+        </Button>
       </form>
-    </Panel>
+
+      <p className="text-body-s text-ink-tertiary">
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="text-accent hover:text-accent-hover underline-offset-4 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }
