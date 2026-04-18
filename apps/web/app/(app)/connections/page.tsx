@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { Skeleton } from '@axis/design-system';
 import ConnectionsContent from '@/components/connections-content';
 import type { Tool } from '@/lib/queries/connectors';
 
@@ -21,7 +22,7 @@ function LoadingConnections() {
     <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-6 py-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-40 animate-pulse rounded-xl border border-edge bg-canvas-surface" />
+          <Skeleton key={i} height={160} rounded="lg" />
         ))}
       </div>
     </div>

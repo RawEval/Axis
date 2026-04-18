@@ -3,7 +3,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Button, PageHeader } from '@/components/ui';
+import { Badge, Button, Card, Skeleton } from '@axis/design-system';
+import { PageHeader } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import {
   IMPLEMENTED_TOOLS,
@@ -125,7 +126,7 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl border border-edge bg-canvas-surface" />
+            <Skeleton key={i} height={160} rounded="lg" />
           ))}
         </div>
       ) : (
@@ -176,15 +177,15 @@ function ToolCard({
   pending: boolean;
 }) {
   return (
-    <div className="group relative flex flex-col rounded-xl border border-edge bg-canvas-surface p-5 shadow-e1 transition-shadow hover:shadow-e2">
+    <Card className="hover:border-edge-strong transition-colors p-5 group relative flex flex-col">
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold text-white ${tool.color}`}>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-canvas-elevated border border-edge-subtle text-ink font-mono text-body font-medium">
             {tool.icon}
           </div>
           <div>
-            <div className="text-sm font-semibold text-ink">{tool.label}</div>
-            <div className="text-xs text-ink-tertiary">{tool.desc}</div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink">{tool.label}</div>
+            <div className="text-body-s text-ink-secondary">{tool.desc}</div>
           </div>
         </div>
         {connected && (
@@ -193,7 +194,7 @@ function ToolCard({
       </div>
 
       {connected && tile && (
-        <div className="mb-3 rounded-md bg-canvas-elevated px-3 py-2 text-xs text-ink-secondary">
+        <div className="mb-3 rounded-md border border-edge-subtle bg-canvas-elevated px-3 py-2 text-body-s text-ink-secondary">
           <div className="flex items-center justify-between">
             <span className="font-medium">{tile.workspace_name || 'Connected'}</span>
             <Badge tone={tile.health === 'green' ? 'success' : tile.health === 'yellow' ? 'warning' : 'neutral'}>
@@ -212,25 +213,22 @@ function ToolCard({
         {connected ? (
           <div className="flex items-center justify-between">
             <Badge tone="success">Connected</Badge>
-            <button
-              onClick={onDisconnect}
-              className="text-xs text-ink-tertiary transition-colors hover:text-danger"
-            >
+            <Button variant="ghost" size="sm" onClick={onDisconnect}>
               Disconnect
-            </button>
+            </Button>
           </div>
         ) : (
           <Button
             variant="primary"
             size="sm"
             onClick={onConnect}
-            disabled={!implemented || pending}
-            className="w-full"
+            loading={pending}
+            disabled={!implemented}
           >
-            {!implemented ? 'Coming soon' : pending ? 'Connecting...' : `Connect ${tool.label}`}
+            {!implemented ? 'Coming soon' : 'Connect'}
           </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
