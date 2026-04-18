@@ -130,11 +130,11 @@ function CredentialsPanel({
         </div>
         <div className="flex items-center gap-2">
           {isCustom && (
-            <Button size="xs" variant="danger" onClick={onDelete}>
+            <Button size="sm" variant="danger" onClick={onDelete}>
               Remove
             </Button>
           )}
-          <Button size="xs" variant="secondary" onClick={() => setExpanded((v) => !v)}>
+          <Button size="sm" variant="secondary" onClick={() => setExpanded((v) => !v)}>
             {expanded ? 'Cancel' : isCustom ? 'Replace' : 'Use your own'}
           </Button>
         </div>

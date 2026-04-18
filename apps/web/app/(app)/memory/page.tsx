@@ -75,7 +75,7 @@ export default function MemoryPage() {
             {TIERS.map((t) => (
               <Button
                 key={t.label}
-                size="xs"
+                size="sm"
                 variant={tier === t.value ? 'primary' : 'secondary'}
                 onClick={() => setTier(t.value)}
               >
@@ -172,7 +172,7 @@ function MemoryRowComponent({
       <TD className="text-ink-tertiary">{row.score.toFixed(3)}</TD>
       <TD className="text-right">
         {onDelete && (
-          <Button size="xs" variant="ghost" onClick={onDelete}>
+          <Button size="sm" variant="ghost" onClick={onDelete}>
             Delete
           </Button>
         )}

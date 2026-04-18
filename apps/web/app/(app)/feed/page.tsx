@@ -92,10 +92,10 @@ function SurfaceCard({
         </div>
       </div>
       <div className="flex flex-shrink-0 gap-1.5">
-        <Button size="xs" variant="ghost" onClick={() => onAction({ id: surface.id, action: 'dismiss' })}>
+        <Button size="sm" variant="ghost" onClick={() => onAction({ id: surface.id, action: 'dismiss' })}>
           Dismiss
         </Button>
-        <Button size="xs" variant="primary" onClick={() => onAction({ id: surface.id, action: 'accept' })}>
+        <Button size="sm" variant="primary" onClick={() => onAction({ id: surface.id, action: 'accept' })}>
           Act on it
         </Button>
       </div>

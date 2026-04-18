@@ -122,7 +122,7 @@ export function InviteModal({
               <code className="flex-1 truncate font-mono text-xs text-ink">
                 {acceptUrl}
               </code>
-              <Button variant="secondary" size="xs" onClick={copyLink}>
+              <Button variant="secondary" size="sm" onClick={copyLink}>
                 Copy
               </Button>
             </div>

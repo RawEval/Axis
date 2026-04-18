@@ -102,7 +102,7 @@ export default function TeamPage() {
                   <div className="flex items-center gap-2">
                     <Badge tone="neutral">{ROLE_LABELS[inv.role]}</Badge>
                     <Button
-                      size="xs"
+                      size="sm"
                       variant="ghost"
                       onClick={() => revoke.mutate(inv.id)}
                     >

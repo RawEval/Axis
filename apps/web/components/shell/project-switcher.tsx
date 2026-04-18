@@ -83,7 +83,7 @@ export function ProjectSwitcher({
           {projects?.length ?? 0} {projects?.length === 1 ? 'project' : 'projects'}
         </span>
         <Button
-          size="xs"
+          size="sm"
           variant="secondary"
           onClick={() => {
             onClose();

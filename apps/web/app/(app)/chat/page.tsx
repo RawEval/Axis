@@ -126,10 +126,10 @@ export default function ChatPage() {
               <div className="mb-2 text-xs font-semibold text-warning-fg">Write preview - {tool}</div>
               <DiffViewer lines={diffLines.map((l) => ({ type: l.type as 'add' | 'del' | 'eq', text: l.text }))} />
               <div className="mt-3 flex gap-2">
-                <Button variant="primary" size="xs" disabled={confirmWrite.isPending || confirmed} onClick={() => confirmWrite.mutate(writeId)}>
+                <Button variant="primary" size="sm" disabled={confirmWrite.isPending || confirmed} onClick={() => confirmWrite.mutate(writeId)}>
                   {confirmWrite.isPending ? 'Confirming...' : confirmed ? 'Done' : 'Confirm'}
                 </Button>
-                <Button variant="ghost" size="xs" disabled={rollbackWrite.isPending || confirmed} onClick={() => rollbackWrite.mutate(writeId)}>
+                <Button variant="ghost" size="sm" disabled={rollbackWrite.isPending || confirmed} onClick={() => rollbackWrite.mutate(writeId)}>
                   Reject
                 </Button>
               </div>
@@ -190,7 +190,7 @@ export default function ChatPage() {
                 />
                 <div className="flex items-center gap-2">
                   <Button
-                    size="xs"
+                    size="sm"
                     variant="primary"
                     disabled={submitCorrection.isPending}
                     onClick={async () => {
