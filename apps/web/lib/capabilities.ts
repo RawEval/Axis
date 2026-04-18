@@ -3,15 +3,23 @@
 import { useSyncExternalStore } from 'react';
 
 export type CapabilityId =
-  | 'connector.slack.read'
-  | 'connector.slack.write'
-  | 'connector.notion.read'
-  | 'connector.notion.write'
-  | 'connector.gmail.read'
+  | 'connector.slack.search'
+  | 'connector.slack.channel_summary'
+  | 'connector.slack.thread_context'
+  | 'connector.slack.user_profile'
+  | 'connector.slack.post'
+  | 'connector.slack.react'
+  | 'connector.notion.search'
+  | 'connector.notion.append'
+  | 'connector.gmail.search'
   | 'connector.gmail.send'
-  | 'connector.gdrive.read'
-  | 'connector.github.read'
-  | 'connector.github.write';
+  | 'connector.gmail.draft'
+  | 'connector.gdrive.search'
+  | 'connector.gdrive.read_content'
+  | 'connector.gdrive.create_doc'
+  | 'connector.github.search'
+  | 'connector.github.comment'
+  | 'connector.github.create_issue';
 
 export type TrustMode = 'ask' | 'auto-reversible' | 'auto';
 
@@ -23,15 +31,23 @@ export interface CapabilityMeta {
 }
 
 export const CAPABILITIES: ReadonlyArray<CapabilityMeta> = [
-  { id: 'connector.slack.read',    tier: 0, label: 'Read Slack',          description: 'Channels, threads, search.' },
-  { id: 'connector.slack.write',   tier: 1, label: 'Post to Slack',       description: 'Send messages to channels and DMs.' },
-  { id: 'connector.notion.read',   tier: 0, label: 'Read Notion',         description: 'Pages, databases, search.' },
-  { id: 'connector.notion.write',  tier: 1, label: 'Edit Notion',         description: 'Create + update pages.' },
-  { id: 'connector.gmail.read',    tier: 0, label: 'Read Gmail',          description: 'Inbox, labels, search.' },
-  { id: 'connector.gmail.send',    tier: 2, label: 'Send Gmail',          description: 'Send email on your behalf — irreversible.' },
-  { id: 'connector.gdrive.read',   tier: 0, label: 'Read Google Drive',   description: 'Files, folders, content.' },
-  { id: 'connector.github.read',   tier: 0, label: 'Read GitHub',         description: 'Issues, PRs, code.' },
-  { id: 'connector.github.write',  tier: 1, label: 'Comment on GitHub',   description: 'Comment on issues + PRs.' },
+  { id: 'connector.slack.search',          tier: 0, label: 'Search Slack',           description: 'Search messages across channels.' },
+  { id: 'connector.slack.channel_summary', tier: 0, label: 'Summarise Slack channel', description: 'Recent activity in a channel.' },
+  { id: 'connector.slack.thread_context',  tier: 0, label: 'Read Slack thread',      description: 'Pull replies in a thread for context.' },
+  { id: 'connector.slack.user_profile',    tier: 0, label: 'Read Slack profile',     description: 'Look up a Slack user.' },
+  { id: 'connector.slack.post',            tier: 1, label: 'Post to Slack',          description: 'Send messages to channels and DMs.' },
+  { id: 'connector.slack.react',           tier: 1, label: 'React on Slack',         description: 'Add an emoji reaction to a message.' },
+  { id: 'connector.notion.search',         tier: 0, label: 'Search Notion',          description: 'Pages and databases.' },
+  { id: 'connector.notion.append',         tier: 1, label: 'Append to Notion',       description: 'Add blocks to an existing page.' },
+  { id: 'connector.gmail.search',          tier: 0, label: 'Search Gmail',           description: 'Inbox, labels, threads.' },
+  { id: 'connector.gmail.draft',           tier: 1, label: 'Draft Gmail',            description: 'Create a draft — never sends.' },
+  { id: 'connector.gmail.send',            tier: 2, label: 'Send Gmail',             description: 'Send email on your behalf — irreversible.' },
+  { id: 'connector.gdrive.search',         tier: 0, label: 'Search Google Drive',    description: 'Files and folders.' },
+  { id: 'connector.gdrive.read_content',   tier: 0, label: 'Read Drive content',     description: 'Open Docs, Sheets, Slides text.' },
+  { id: 'connector.gdrive.create_doc',     tier: 1, label: 'Create Google Doc',      description: 'Create a new doc in Drive.' },
+  { id: 'connector.github.search',         tier: 0, label: 'Search GitHub',          description: 'Issues, PRs, code.' },
+  { id: 'connector.github.comment',        tier: 1, label: 'Comment on GitHub',      description: 'Comment on issues and PRs.' },
+  { id: 'connector.github.create_issue',   tier: 1, label: 'Create GitHub issue',    description: 'File a new issue in a repo.' },
 ];
 
 const STORAGE_KEY = 'axis.capabilities';
