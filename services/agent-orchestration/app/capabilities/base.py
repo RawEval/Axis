@@ -82,6 +82,16 @@ class CapabilityResult:
         except (TypeError, ValueError):
             return json.dumps({"summary": self.summary, "content": str(self.content)})
 
+    @classmethod
+    def pending_target_pick(cls, *, write_id: str) -> "CapabilityResult":
+        """Capability paused for the user to pick one of N staged target
+        candidates. The supervisor surfaces the picker; the planner halts
+        until POST /writes/{write_id}/choose-target lands."""
+        return cls(
+            summary=f"write pending — multiple candidate targets, awaiting user pick (write_id={write_id[:8]}…)",
+            content={"status": "pending_target_pick", "write_id": write_id},
+        )
+
 
 @runtime_checkable
 class Capability(Protocol):

@@ -24,7 +24,7 @@ from axis_common import (
     get_logger,
     make_health_router,
 )
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -282,6 +282,32 @@ async def rollback_write(write_action_id: str) -> dict[str, Any]:
         "status": "rolled_back",
         "note": "Marked as rolled back. Full block deletion is a Phase 2 feature.",
     }
+
+
+@app.post("/writes/{write_id}/choose-target")
+async def choose_write_target(write_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """User picked one of the staged target_options on a pending write —
+    persist the choice and republish a write.preview event so the UI moves
+    on to the diff confirmation step."""
+    chosen = body.get("chosen")
+    if not chosen or not chosen.get("id"):
+        raise HTTPException(400, "chosen target missing or malformed")
+    repo = WritesRepository(db.raw)
+    updated = await repo.choose_target(write_id, chosen)
+    if not updated:
+        raise HTTPException(404, "write not found or already executed")
+    diff = updated.get("diff") or {}
+    if isinstance(diff, str):
+        diff = json.loads(diff)
+    user_id = updated.get("user_id")
+    if user_id is not None:
+        await publish_event(
+            user_id=str(user_id),
+            project_id=str(updated["project_id"]) if updated.get("project_id") else None,
+            event_type="write.target_chosen",
+            payload={"write_id": write_id, "chosen": chosen, "diff": diff},
+        )
+    return {"ok": True, "write_id": write_id, "target_id": chosen["id"]}
 
 
 # ---------------- Permission resolve ----------------

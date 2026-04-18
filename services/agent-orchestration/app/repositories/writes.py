@@ -37,14 +37,17 @@ class WritesRepository:
         target_type: str | None,
         diff: dict[str, Any],
         before_state: dict[str, Any] | list[Any],
+        target_options: list[dict[str, Any]] | None = None,
+        target_chosen: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         async with self._pool.acquire() as conn, conn.transaction():
             wa = await conn.fetchrow(
                 """
                 INSERT INTO write_actions
                     (action_id, project_id, tool, target_id, target_type, diff,
-                     confirmed_by_user, rolled_back)
-                VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, false, false)
+                     confirmed_by_user, rolled_back, target_options, target_chosen)
+                VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, false, false,
+                        $7::jsonb, $8::jsonb)
                 RETURNING id
                 """,
                 action_id,
@@ -53,6 +56,8 @@ class WritesRepository:
                 target_id,
                 target_type,
                 json.dumps(diff),
+                json.dumps(target_options) if target_options is not None else None,
+                json.dumps(target_chosen) if target_chosen is not None else None,
             )
             ss = await conn.fetchrow(
                 """
@@ -92,6 +97,44 @@ class WritesRepository:
                 write_action_id,
             )
         return result.endswith(" 1")
+
+    async def choose_target(
+        self, write_action_id: str, chosen: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Pick one of the staged target_options. Returns the updated row
+        joined with the action's user_id (for downstream event publishing)
+        and snapshot before/after state. Returns None if the row is missing
+        or already executed (confirmed_by_user=true)."""
+        async with self._pool.acquire() as conn, conn.transaction():
+            updated = await conn.fetchrow(
+                """
+                UPDATE write_actions
+                SET target_chosen = $2::jsonb,
+                    target_id = COALESCE(target_id, $3)
+                WHERE id = $1::uuid AND confirmed_by_user = false
+                RETURNING id
+                """,
+                write_action_id,
+                json.dumps(chosen),
+                str(chosen.get("id") or ""),
+            )
+            if updated is None:
+                return None
+            row = await conn.fetchrow(
+                """
+                SELECT wa.id, wa.action_id, wa.tool, wa.target_id, wa.target_type,
+                       wa.diff, wa.target_options, wa.target_chosen,
+                       wa.confirmed_by_user, wa.rolled_back, wa.project_id,
+                       aa.user_id,
+                       ws.before_state, ws.after_state
+                FROM write_actions wa
+                LEFT JOIN agent_actions aa ON aa.id = wa.action_id
+                LEFT JOIN write_snapshots ws ON ws.write_action_id = wa.id
+                WHERE wa.id = $1::uuid
+                """,
+                write_action_id,
+            )
+        return dict(row) if row else None
 
     async def set_after_state(
         self, write_action_id: str, after_state: dict[str, Any] | list[Any]
