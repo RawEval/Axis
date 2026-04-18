@@ -8,6 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@axis/design-system';
+import { CapabilitiesPanel } from '@/components/settings/capabilities-panel';
 import { clearToken } from '@/lib/auth';
 import { useMe } from '@/lib/queries/auth';
 import { useEvalScores } from '@/lib/queries/eval';
@@ -54,10 +55,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="capabilities">
-          <SectionHeader>Capabilities</SectionHeader>
-          <p className="mt-3 text-body-s text-ink-tertiary">
-            What Axis can do — capability scope tuner. Coming soon (Plan 7).
-          </p>
+          <CapabilitiesPanel />
         </TabsContent>
 
         <TabsContent value="output">
