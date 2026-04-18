@@ -16,9 +16,11 @@ function rendered() {
 }
 
 describe('TopBar', () => {
-  it('renders the ⌘K chip (decorative until Plan 4 wires the palette)', () => {
+  it('renders the ⌘K chip and opens the palette when clicked', async () => {
     rendered();
-    expect(screen.getByText(/⌘K/)).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /open command palette/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('renders the theme toggle', () => {

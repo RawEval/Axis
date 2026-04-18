@@ -12,6 +12,7 @@ import {
   DropdownMenuLabel,
 } from '@axis/design-system';
 import { ThemeToggle } from './theme-toggle';
+import { commandPalette } from '@/lib/global-shortcuts';
 
 export function TopBar() {
   return (
@@ -23,9 +24,9 @@ export function TopBar() {
 
       <button
         type="button"
-        aria-label="Open command palette (coming soon)"
-        aria-disabled="true"
-        className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-edge text-ink-tertiary hover:text-ink-secondary text-body-s opacity-60 cursor-not-allowed"
+        aria-label="Open command palette"
+        onClick={() => commandPalette.open()}
+        className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-edge text-ink-secondary hover:text-ink hover:bg-canvas-elevated text-body-s transition-colors"
       >
         <span>Search…</span>
         <Kbd>⌘K</Kbd>
