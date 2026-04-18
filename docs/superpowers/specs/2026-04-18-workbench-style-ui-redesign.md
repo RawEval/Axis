@@ -1,252 +1,226 @@
-# Workbench-style UI redesign for Axis
+# Axis UI redesign — opinionated end-to-end
 
 **Date:** 2026-04-18
 **Status:** Design — awaiting user approval
-**Owners:** UI/UX redesign initiative
-**Related:** ADR 006 (amendment), CLAUDE.md invariant #1 (amendment), upcoming "Workbench-of-Axis" companion app
+**Canonical source:** [`docs/compass_artifact_wf-99c65767-b8eb-4aa5-b2a0-64ee6a758ac2_text_markdown.md`](../../compass_artifact_wf-99c65767-b8eb-4aa5-b2a0-64ee6a758ac2_text_markdown.md) ("the artifact")
 
-## Problem
+This file is a **thin translator**. The artifact is the design — read it first. This file does three things only:
+1. Confirms the artifact's prescriptions are adopted wholesale.
+2. Maps every prescription onto specific files and packages in this monorepo so the implementation plan that follows can cite real paths.
+3. Flags every place the artifact contradicts existing `CLAUDE.md` invariants, ADRs, or scaffolded code, and prescribes the amendment in the artifact's own terms.
 
-The current Axis web UI feels like an operator dashboard: navy 52-px icon-only sidebar, single blue accent, vivid per-tool brand colors on `/connections`, an amber-pulsing 4-button-plus-Deny permission modal, and admin-dense pages (`/memory`, `/credentials`, `/settings`) that read like Tableau panels. The user's verdict: *"Nothing is good. Nothing is user-friendly."*
+Rule when this spec and the artifact disagree: **artifact wins**.
 
-The reference is RawEval's Workbench app: dark-first, single signal-orange accent, Instrument Serif display + DM Mono chrome, hairline borders, no shadows at rest, two-button confirmations, status communicated through small mono uppercase pills. The user describes it as *"a math problem — basic, optimistic, trusting, usable by a 60-year-old"*.
+## What we're shipping (one paragraph)
 
-A new "Workbench-of-Axis" companion app is also planned. The token system designed here must serve both Axis and that companion without divergence.
+A completely re-skinned and re-modeled Axis web app: zinc-tinted dark-first palette with **ink-cobalt `#3340E6` / `#4F5AF0`** as the single accent, **Söhne (or Inter Display + Inter fallback) + Berkeley Mono (or Commit Mono fallback)** type stack with mono used selectively (~15 % of text, never in headings or body), a **three-column shell** (LeftNav 240 → 56 px · Main · contextual RightPanel 360 px), an **operations-center Home** that replaces the empty-chat first impression, **structured artifacts** (live task tree, diff-first preview cards, citation chips, agent-state dots) instead of chat bubbles, **breathing idle** animation on active runs in place of spinners, and a permission + write interaction model rebuilt around three risk tiers and per-connector trust. Light theme is a faithful mirror, not an afterthought. The whole thing ships behind two feature flags (`VISUAL_V2`, `INTERACTION_V2`) with a 30-day "Use classic Axis" escape hatch.
 
-## Goals
+## Adopted from the artifact (not re-litigated here)
 
-1. Make the Axis web UI feel like Workbench — same tokens, typography, spacing, component patterns.
-2. Ship light **and** dark themes from day one, with a system toggle that respects `prefers-color-scheme` on first load.
-3. Replace the 4-option permission grid with a single Allow + Deny prompt.
-4. Move write actions to optimistic-with-undo, except for irreversible writes (Gmail send, GitHub merge, deletes, audience > 3).
-5. Remove all per-tool brand coloring on `/connections`.
-6. Keep every architectural invariant that isn't explicitly amended (data isolation, eval-on-every-action, OAuth encryption, role labels stay `owner/admin/manager/member/viewer`).
+These are decisions taken from the artifact verbatim. If you want detail, jump to the cited section.
 
-## Non-goals
-
-- Mobile (`apps/mobile-ios`, `apps/mobile-android`) is out of scope for this round. They will adopt the same tokens later via `packages/kmm-shared` and a parallel SwiftUI port — tracked separately.
-- No new pages, no new features, no new routes. This is a pure aesthetic + interaction redesign of existing surfaces.
-- No backend changes beyond what's required to support the two amendments.
-
-## Amendments
-
-### A1 — ADR 006: collapse the lifetime grid
-
-ADR 006 currently prescribes four user-visible lifetime choices per grant (`once / project / 24h / forever`) plus a separate Deny button. The DB schema (lifetime column with values `session / 24h / project / forever`) is preserved unchanged.
-
-**New surface:** a single Cancel + Allow modal. "Allow" defaults to `lifetime = project`. The text below the action describes what's about to happen in plain English ("Axis will read your Notion docs in *Marketing Q2* until you turn it off"). A small ghost link "Change scope…" opens a one-line popover with three radio options (`just this run / this project / forever`) — discoverable, not in your face. Deny stays a peer button to Allow.
-
-**New surface for irreversible actions:** the same modal, but the Allow button text is the action itself ("Send email", "Merge PR", "Delete file") and the modal cannot remember the answer — `lifetime` is forced to `task`. ADR 006's "always gate, every time" capabilities (Gmail send, GitHub merge) keep that behavior.
-
-**Per-capability scope panel:** new section on `/settings` called "What Axis can do" — a flat list of every granted capability with its current scope and a Revoke button. This is where power users tune lifetimes after the fact. No grid in the heat of the moment.
-
-ADR 006 doc gets a "2026-04-18 amendment" section at the bottom describing this.
-
-### A2 — CLAUDE.md invariant #1: optimistic writes with 30s undo
-
-Current invariant: *"Every write action requires user confirmation. Non-negotiable in Phase 1."*
-
-New invariant: *"Every write action is either (a) optimistic-with-undo for ≥30 seconds, or (b) hard-gated with a confirm modal. Reversible writes default to (a); irreversible writes default to (b). The user can flip the default per capability in /settings."*
-
-Reversible (default optimistic): Slack post-as-me, Notion append, GitHub comment, Drive comment, Linear status change.
-Irreversible (default hard-gate): Gmail send, GitHub merge, any delete, any send to audience > 3, any edit on a doc shared outside the user's org.
-
-UI surface: a slim toast slides in from the bottom-right, 200 ms, with mono text ("Sent to **#growth** · Undo (30s)") and an undo button that calls a `POST /v1/actions/{id}/undo` endpoint. After 30 s the toast fades; undo is gone. The toast itself is part of the design system (see Components below).
-
-CLAUDE.md gets an amendment block under "Core architectural invariants" pointing to this spec.
-
-## Tokens
-
-Token names match Workbench so the design system can be lifted from the monorepo verbatim. Color values are quoted by CSS custom property name. Where Axis needs a light counterpart, both are listed.
-
-### Color (dark theme — primary)
-
-| Token | Value | Use |
-|---|---|---|
-| `--color-bg` | `#0A0A0B` | Page background |
-| `--color-bg-surface` | `#141415` | Cards, sidebar, modal panels |
-| `--color-bg-muted` | `#1C1C1E` | Inputs, hovered rows |
-| `--color-bg-elevated` | `#232326` | Hovered cards, popovers |
-| `--color-text-primary` | `#FAFAFA` | Body text, headings |
-| `--color-text-secondary` | `#A1A1AA` | Subtitles, descriptions |
-| `--color-text-muted` | `#71717A` | Inactive nav, timestamps |
-| `--color-text-faint` | `#52525B` | Placeholders, dividers' labels |
-| `--color-border` | `#27272A` | Hairline borders everywhere |
-| `--color-border-strong` | `#3F3F46` | Hovered borders, focus rings |
-| `--color-border-subtle` | `#1E1E21` | Sub-borders inside cards |
-| `--color-signal` | `#FF6B35` | Single accent — primary CTA, focus, active nav |
-| `--color-signal-hover` | `#FF8A5C` | Primary hover |
-| `--color-signal-subtle` | `rgba(255,107,53,0.12)` | Focus ring fill, active nav bg |
-| `--color-success` | `#22C55E` | Success state |
-| `--color-warning` | `#EAB308` | Warning state |
-| `--color-error` | `#EF4444` | Destructive state, deny button |
-| `--color-info` | `#3B82F6` | Info badges |
-
-### Color (light theme — counterpart)
-
-| Token | Value |
+| Decision | Artifact section |
 |---|---|
-| `--color-bg` | `#FAFAFA` |
-| `--color-bg-surface` | `#FFFFFF` |
-| `--color-bg-muted` | `#F4F4F5` |
-| `--color-bg-elevated` | `#E4E4E7` |
-| `--color-text-primary` | `#0A0A0B` |
-| `--color-text-secondary` | `#52525B` |
-| `--color-text-muted` | `#71717A` |
-| `--color-text-faint` | `#A1A1AA` |
-| `--color-border` | `#E4E4E7` |
-| `--color-border-strong` | `#D4D4D8` |
-| `--color-border-subtle` | `#F4F4F5` |
-| `--color-signal` | `#FF6B35` (unchanged) |
-| `--color-signal-hover` | `#E55A2B` |
-| `--color-signal-subtle` | `rgba(255,107,53,0.08)` |
-| Semantic colors | unchanged |
+| Color tokens (canvas/surface/elevated/sunken/borders/text/accent/semantic) | §2a |
+| Agent-state color tokens (`agent.thinking/running/awaiting/recovered/blocked/background`) | §2a |
+| Type stack — Söhne primary, Inter fallback; Berkeley Mono primary, Commit Mono fallback; **no Instrument Serif, no Geist** | §2b |
+| Type scale (Display/Heading/Body/Caption/Mono) | §2b |
+| Spacing 4 px base, radius scale 0/4/6/8/12/16/full, elevation by luminance on dark + shadows on light | §2c |
+| Motion durations (micro/short/medium/long/ambient/shimmer), spring + ease-out + linear easings, **breathing idle** keyframe, **shimmer not pulse** for skeletons, `prefers-reduced-motion` collapses to instant | §2c |
+| Iconography — Lucide library, sizes 14/16/20/24, plus ~12 commissioned custom marks (5 connector + 5 agent-state + Axis hairline-tick) | §2d |
+| Optional sound + haptic vocabulary, defaulted off in enterprise | §2e |
+| App shell — LeftNav 240/56, Topbar 48, contextual RightPanel 360, no status bar, no breadcrumbs | §3a |
+| **Home = operations center** (Running now / Needs your approval / Connector dots / Recent runs) — not a chat box | §3a |
+| Per-page layouts for Login, Chat, Activity, History, Connections, Credentials, Memory, Settings, Team, Projects, Admin | §3b–§3l |
+| Component primitives + Axis-native components (LiveTaskTree, DiffViewer, PermissionCard, WritePreviewCard, CitationChip, AgentStateDot, ConnectorTile, MemoryRow) | §4 |
+| Agent prompt+run interaction (live tree, citations, error mid-run, cancel) | §5a |
+| Permission model A1 (recommendation) | §5b |
+| Write model A2 (recommendation) | §5c |
+| Correction capture (4 layers) | §5d |
+| `⌘P` project switcher, memory inspection, onboarding (demo workspace), multi-tool runs, offline/degraded behavior, full keyboard map | §5e–§5j |
+| Empty-state system, error taxonomy, loading states, long/short runs, RTL, color-blind, screen-reader patterns | §6 |
+| Phased migration plan with two feature flags and rollback metrics | §8 |
 
-Theme toggle lives in the user menu (top-right). On first load, respects `prefers-color-scheme`. Choice persists in `localStorage["axis.theme"]` and is mirrored to `document.documentElement[data-theme]`.
+## Codebase translation
 
-### Typography
+The artifact talks in tokens and pages. This is where each lives.
 
-| Token | Family | Use |
-|---|---|---|
-| `--font-display` | `'Instrument Serif', Georgia, serif` | Page titles only (`h1`) |
-| `--font-body` | `system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif` | Everything else |
-| `--font-mono` | `'DM Mono', ui-monospace, 'SF Mono', monospace` | Status badges, timestamps, button labels, breadcrumbs, code, diff viewer |
+### Tokens & globals
 
-Type scale (px): `12 / 13 / 15 (base) / 17 / 20 / 24 / 32`. Line heights: `1.08 / 1.3 / 1.5 / 1.7`. Letter spacing: `0 / -0.02em / 0.06em (mono UI labels) / 0.12em (uppercase mono)`.
-
-### Spacing, radius, shadow
-
-- Spacing: 4 px base (`--space-1` … `--space-24`).
-- Radius: `4 / 8 / 12 / 16 / 9999`. Buttons and cards = `8`. Modals = `12`. Pills = `9999`.
-- Shadow: `--shadow-md` only on hover lifts and the toast. **No shadows at rest.** Hairline borders carry all elevation.
-
-## App shell
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Sidebar (220px, collapsible to 56px)  │  Topbar (56px)     │
-│  Logo                                  ├────────────────────┤
-│  ─────                                 │                    │
-│  Ask                                   │  Page content       │
-│  Activity                              │  max-width 1100px   │
-│  History                               │  px 48 / py 32 64   │
-│  Tools                                 │                    │
-│  Team                                  │                    │
-│  ─────                                 │                    │
-│  «collapse                             │  (optional toast    │
-│                                        │   bottom-right)     │
-└────────────────────────────────────────┴────────────────────┘
-```
-
-- **Sidebar** is `bg-surface` with right hairline. Items are 18 px lucide-react icon + body-font label, padding `10px 16px`, gap `12px`. Active = `bg-muted` + `font-weight 500` + `text-primary`. Inactive = `text-muted`. Collapse button at the bottom is faint, no chrome.
-- **Topbar** is `bg-surface` with bottom hairline, height 56 px. Left: project switcher as a ghost button with mono uppercase project name + small chevron. Right: theme toggle, then user avatar (initial circle, hairline border, no fill). Both open Workbench-style dropdowns (border, no shadow).
-- **No status bar**. The footer green/red dot from the current shell is killed; connectivity surfaces only when broken (a top inline banner).
-
-## Pages
-
-For each page: the *only* change unless noted is theme/typography/component swap. Layout structure stays. Deletions and behavioral changes are explicit.
-
-### `/login`, `/signup`
-Single centered card, max-width 420 px, hairline border, 48 px padding. Display-font title. One primary button. Email + password inputs are the standard component. No marketing copy, no logos, no gradient hero.
-
-### `/chat` — the main surface
-Conversation flow stays top-to-bottom. Changes:
-- Live progress card → swap to a hairline-bordered `card-surface` containing the existing `LiveTaskTree`. Step dots use semantic colors at full saturation but only 5 px diameter; pulse stays for `running` and `awaiting_permission`.
-- Diff viewer → mono font, `+` lines `bg = success @ 8% / text = success`, `−` lines `bg = error @ 8% / text = error / strikethrough`, prefix in faint mono.
-- Cited response → text spans get a 1 px hairline underline in `--color-signal`, plus a tiny mono superscript number that links to the source. Sources list below the response is a series of hairline-bordered rows, mono provider label + body-font title + secondary excerpt + faint timestamp.
-- Sticky command bar → single rounded-md input, `bg-muted`, signal focus ring (2 px `--color-signal-subtle`), Send is a ghost-styled icon button on the right that turns primary on input.
-
-### `/feed` — Activity
-- "Needs your attention" → vertical list of hairline-bordered rows. Each row: 16 px lucide icon (faint, **same color for all sources** — recognition comes from the mono provider label), bold body title, secondary excerpt, mono timestamp + signal-type pill on the right. Confidence % becomes a mono `LOW · MED · HIGH` token, no percentages shown.
-- "Recent activity" → identical row pattern, no section header — separated by a faint divider with a mono `EARLIER TODAY` label.
-- Empty state: dashed-border box, 36 px faint icon, body-font message, optional ghost CTA.
-
-### `/history`
-Hairline-bordered rows in a single list. Per row: mono timestamp left, body-font prompt centered, mono `DONE` / `FAILED` pill right, ghost "Open" link on hover. No badges, no token counts on the index — those live in detail.
-
-### `/connections`
-Same 3-column grid, but each card is the standard `card-surface` (hairline border, no shadow at rest, `hover-lift` adds `shadow-md` and `border-strong`). Inside: 18 px monochrome connector mark in `text-secondary` color, mono uppercase connector name, body-font description, status pill at the bottom (`CONNECTED` / `NOT CONNECTED` / `COMING SOON`). Connect = primary button; Disconnect = ghost. **No tool brand colors anywhere.**
-
-### `/team`
-- Header → display-font title, ghost "Invite" button (primary on hover).
-- Members → hairline-bordered list, one row per person: 32 px initial circle, body-font name, mono uppercase role pill (`OWNER / ADMIN / MANAGER / MEMBER / VIEWER` — no other titles, ever), faint email. The `MembersGraph` org chart is removed; it added complexity without payoff.
-- Pending invites → same row pattern, with a `PENDING` pill and a ghost "Resend / Revoke" link.
-
-### `/memory`
-- Overview → three flat stat blocks (no cards), large display-font number, mono uppercase label below. No three-column dl table.
-- Search → standard input, filter buttons become a single mono-segmented control (`ALL · PERSON · WORK · CHANNEL`). Results → hairline-bordered rows, no tier/score columns by default; "Show details" ghost link toggles a row expansion that reveals tier, score, type. Power-user information is one click away, not in your face.
-
-### `/credentials`
-One section per tool. Each section: hairline-bordered card, mono uppercase tool name + status pill (`USING AXIS DEFAULT` / `USING YOUR APP`), body-font description. Single primary button: "Use your own credentials" → opens the form inline within the same card (no modal). Form is the standard input/label pattern. Help link is a ghost "Read the guide ↗" line at the bottom.
-
-### `/settings`
-Three sections, each a hairline-bordered card:
-- **Account** — flat key-value rows, no `dl` grid.
-- **Theme** — three-way segmented control (`SYSTEM · LIGHT · DARK`).
-- **What Axis can do** — *new section per A1.* Flat list of every granted capability with mono capability name + body-font scope label + ghost Revoke button.
-- **Output quality** — composite score as a single number with display font, faint trend indicator below. "Recent runs" → 5-row hairline list, no card.
-- **Sign out** is a ghost danger link at the bottom. Not a button.
-
-## Component patterns
-
-| Component | Spec |
+| Artifact concept | File in this repo |
 |---|---|
-| **Button — primary** | `bg-signal`, `text` `#FFFFFF`, padding `10px 20px`, radius `8`, mono uppercase label `12px`, letter-spacing `0.06em`, hover `bg-signal-hover` |
-| **Button — secondary** | transparent bg, `border 1px solid border`, `text-primary`, hover `bg-elevated` + `border-strong` |
-| **Button — ghost** | transparent, no border, `text-secondary`, hover `text-primary` + `bg-elevated` |
-| **Button — danger** | `bg-error`, white text, used only for destructive confirms |
-| **Input** | `bg-muted` (dark) / `bg-surface` (light), `border 1px solid border`, padding `10px 14px`, focus = `border-signal-border` + `box-shadow 0 0 0 2px signal-subtle` |
-| **Card** | `bg-surface`, `border 1px solid border`, radius `12`, padding `20`, **no shadow at rest**, `hover-lift` adds `translateY(-2px)` + `shadow-md` |
-| **Status badge** | mono `11px`, uppercase, letter-spacing `0.08em`, padding `2px 8px`, radius `9999`, bg = semantic @ 8 %, border = semantic @ 18 %, color = semantic, optional 5 px pulse dot |
-| **Toast** | bottom-right, slide-in 200 ms, padding `12px 16px`, bg = semantic @ 10 %, border = semantic @ 20 %, mono label + body action, auto-dismiss 4 s (Undo toast = 30 s) |
-| **Modal** | backdrop `rgba(0,0,0,0.6)` + `backdrop-filter: blur(4px)`, max-width 420 px, `bg-surface`, `border 1px solid border`, radius `12`, padding `24`, two-button footer (secondary + primary), Esc dismisses |
-| **List row** | hairline divider above, padding `16px 20px`, hover `bg-muted` |
-| **Segmented control** | mono uppercase labels, hairline border around the group, divider between segments, active segment `bg-muted` + `text-primary`, others `text-muted` |
+| `bg.*`, `text.*`, `border.*`, `accent.*`, `success/warning/danger/info` | `apps/web/tailwind.config.ts` (extends `colors`) and `apps/web/app/globals.css` (CSS custom properties on `:root` + `[data-theme="light"]`) |
+| `agent.*` state tokens | same — namespaced under `colors.agent` |
+| Type scale, font families | `apps/web/tailwind.config.ts` (`theme.extend.fontSize`, `fontFamily`) + `apps/web/app/globals.css` (font-face declarations, `font-display` strategy) |
+| Spacing, radius, shadow scales | `apps/web/tailwind.config.ts` |
+| Motion tokens, `@keyframes breathe`, `@keyframes shimmer`, `prefers-reduced-motion` overrides | `apps/web/app/globals.css` |
+| Theme attribute (`data-theme`) + system preference detection | new hook `apps/web/lib/theme.ts`; mounted in `apps/web/app/providers.tsx` |
 
-## What's deleted
+The current `tailwind.config.ts` palette (`canvas/ink/edge/nav/brand/semantic`) is replaced wholesale. Existing custom shadows (`sm-strong`, `panel`, `popover`) are deleted; new shadow scale ships only on the light theme per artifact §2c.
 
-- Custom shadows `sm-strong`, `panel`, `popover` from `tailwind.config.ts`.
-- All hardcoded source brand colors in `SOURCE_COLORS`.
-- The `MembersGraph` component (`components/team/`).
-- All-caps section headers like "NEEDS YOUR ATTENTION" — replaced by the `EARLIER TODAY`-style mono dividers.
-- The 4-option permission modal (`components/chat/permission-modal.tsx`) is rewritten, not deleted — same file, single-confirm pattern.
-- The 6-px-tall green/red status bar at the bottom of the shell.
-- Symbol-character icons in the nav (⌘◉↻⚡◎) — replaced with lucide-react.
+### Component library
 
-## Workbench-of-Axis (forward compatibility)
+Per artifact §8 Phase 1: primitives are promoted to `packages/design-system` so the upcoming Workbench-of-Axis companion app can consume them without re-implementation. The split:
 
-The user has flagged a separate "Workbench app for Axis" coming. This redesign keeps that easy:
+**Stays in `apps/web/components/ui/`** (composition only, app-specific): nothing — every primitive moves.
 
-- All tokens are CSS custom properties on `:root` and `[data-theme]`. The companion app imports the same `globals.css`.
-- Component primitives go into `packages/design-system` so both apps consume the same React components.
-- No tokens or components are named with `axis-` prefixes — they're generic (`button-primary`, `card-surface`, etc.) so the companion can adopt them without renames.
+**Moves to `packages/design-system/src/components/`** in this order:
 
-## Implementation surface (rough)
+1. `Button`, `Input`, `Textarea`, `Select`, `Combobox` (`cmdk`-backed)
+2. `Card`, `Badge`, `Toast`, `Modal`, `Popover`, `Tooltip`, `DropdownMenu`, `ContextMenu`
+3. `Tabs`, `SegmentedControl`, `ProgressBar`, `SkeletonBlock`
+4. `Avatar`, `Kbd`, `EmptyState`, `ErrorState`
 
-Files that change (concrete implementation order is the next planning step, not this spec):
+**New Axis-native components** (live in `packages/design-system/src/components/axis/` — namespaced because they're domain-loaded):
 
-- `apps/web/tailwind.config.ts` — new token mapping
-- `apps/web/app/globals.css` — CSS custom properties for both themes, font imports
-- `apps/web/components/shell/*` — sidebar, topbar, theme toggle, no status bar
-- `apps/web/components/ui/*` — every primitive
-- `apps/web/components/chat/permission-modal.tsx` — single Allow + Deny
-- `apps/web/components/diff-viewer.tsx` — mono + opacity-tinted lines
-- `apps/web/components/team/members-graph.tsx` — deleted
-- `apps/web/app/(app)/*/page.tsx` — every page swapped to new components
-- `apps/web/app/(auth)/*/page.tsx` — login/signup card
-- `packages/design-system/*` — promoted primitives, exported for the companion
-- `docs/architecture/permissions-model.md` — A1 amendment block
-- `CLAUDE.md` — A2 amendment block under invariant #1
-- New: `apps/web/components/ui/toast.tsx` — undo-capable
-- New: `apps/web/app/(app)/settings/capabilities/` (or settings tab) — capability scope panel
+- `LiveTaskTree` (replaces existing `apps/web/components/chat/live-task-tree.tsx`)
+- `DiffViewer` (rewrites existing `apps/web/components/diff-viewer.tsx`)
+- `PermissionCard` (replaces existing `apps/web/components/chat/permission-modal.tsx` — note: card, not modal)
+- `WritePreviewCard` (new)
+- `CitationChip` + `CitationsPanel` (replaces existing `apps/web/components/chat/cited-response.tsx` markup)
+- `AgentStateDot` (new — used in LeftNav, Home, task tree, history)
+- `ConnectorTile` (new — replaces tool cards on `/connections`)
+- `MemoryRow` (new)
+- `PromptInput` (new — multi-line auto-resize, slash, @, file drop, voice)
+- `BreathingPulse` (animation primitive)
 
-## Risks
+Every component ships with: tokenized styles, ARIA annotations from artifact §6 / accessibility section, Storybook entry, dark+light visual regression test (Playwright + Chromatic), keyboard-behavior unit test.
 
-- **The optimistic-undo path needs backend support.** Every write capability needs an `undo` handler. If a capability cannot undo (e.g. external email already delivered), it must be in the irreversible list. The capability registry needs an `undoable: bool` field; A1's per-capability scope panel uses it to choose the right modal.
-- **Light theme on a Workbench-derived palette is less battle-tested.** Workbench is dark-first. The light-theme tokens above are derived, not lifted; the first build will need contrast verification.
-- **Instrument Serif at small sizes is tricky.** Restrict it to `h1` only (page titles). Everything else stays sans/mono.
-- **Replacing the permission modal touches an ADR.** ADR 006 must be amended in the same PR as the UI change, or the docs and code drift.
+### Shell & nav
+
+| Artifact piece | File |
+|---|---|
+| Three-column shell wrapper | `apps/web/components/shell/shell.tsx` (rewritten) |
+| LeftNav (240/56 collapse) | `apps/web/components/shell/nav-rail.tsx` (rewritten — keep file path, replace contents) |
+| Topbar (48 px, project selector, ⌘K chip, connector dots, user) | `apps/web/components/shell/top-bar.tsx` (rewritten) |
+| RightPanel (slides in, contextual) | new `apps/web/components/shell/right-panel.tsx` + a `useRightPanel()` store in `apps/web/lib/store.ts` |
+| Status bar | **deleted** — `apps/web/components/shell/status-bar.tsx` removed |
+| ⌘K command palette | new `apps/web/components/shell/command-palette.tsx` (cmdk) |
+| `?` shortcut overlay | new `apps/web/components/shell/shortcut-overlay.tsx` |
+
+### Pages
+
+Each page is rewritten in place; the route file remains, the JSX is replaced with the layout from the cited artifact section.
+
+| Route | File | Artifact section |
+|---|---|---|
+| `/` (Home — operations center) | `apps/web/app/(app)/page.tsx` (currently the dashboard) | §3a |
+| `/login`, `/signup` | `apps/web/app/(auth)/login/page.tsx`, `…/signup/page.tsx` | §3b |
+| `/chat` | `apps/web/app/(app)/chat/page.tsx` | §3c |
+| `/feed` (Activity) | `apps/web/app/(app)/feed/page.tsx` | §3d |
+| `/history` | `apps/web/app/(app)/history/page.tsx` | §3e |
+| `/connections` | `apps/web/app/(app)/connections/page.tsx` | §3f |
+| `/credentials` | `apps/web/app/(app)/credentials/page.tsx` (becomes a RightPanel inside `/connections`; route may collapse — TBD in implementation plan) | §3g |
+| `/memory` | `apps/web/app/(app)/memory/page.tsx` | §3h |
+| `/settings` | `apps/web/app/(app)/settings/page.tsx` (becomes tabbed: Account / Appearance / Capabilities / Output quality / Notifications / Advanced / Sign out) | §3i |
+| `/team` | `apps/web/app/(app)/team/page.tsx` | §3j |
+| `/projects`, `/projects/new` | `apps/web/app/(app)/projects/page.tsx` (+ new sub-route or modal) | §3k |
+| Admin dashboard | new `apps/web/app/(app)/admin/page.tsx` | §3l |
+
+### Backend support required
+
+The artifact's interaction model needs backend that doesn't fully exist yet. Each item below is a separate ticket; the implementation plan must order them.
+
+- **Three-tier capability registry** — every capability declares its tier (`0 read / 1 reversible / 2 irreversible`). `services/agent-orchestration/` capability registry gets a `tier: int` field; the artifact's §5b table is the source of truth for assignments.
+- **Undo handlers** — each Tier-1 capability needs a server-side `undo(action_id)` that the toast's button calls via `POST /v1/actions/{id}/undo`. New endpoint in `services/api-gateway/`. Saga compensations for cross-connector cascades per artifact §5c.
+- **Audience-counter** — for sends (Slack post, Gmail send), the orchestrator must compute recipient count *before* surfacing the preview card, so audience > 3 escalates to Tier 2 modal.
+- **Per-capability trust mode** — new table or column on the existing grants table, settable from the Capabilities settings tab. Read by the orchestrator before deciding card vs. modal.
+- **Backgrounded runs** — runs > 120 s offer to background; needs persistent run state and a topbar "Running (n)" surface that survives navigation. Already partially in `agent-orchestration` — needs a frontend live store, no schema change.
+- **Demo workspace seed** — synthetic Slack/Notion/Gmail data for first-run onboarding (§5g). New script in `scripts/seed-demo-workspace.py`.
+- **OpenTelemetry-compatible JSON trace export** — for History page export. Probably a wrapper over existing run telemetry.
+
+## Amendments to existing invariants
+
+Two existing rules collide with the artifact. Both need amendment notes in the same PR that lands the new UI, or the docs and code drift.
+
+### A1 — ADR 006 (`docs/architecture/permissions-model.md`)
+
+**Currently:** the doc prescribes a 4-axis grant (scope × capability × action × lifetime) with four user-visible lifetime choices (`session / 24h / project / forever`).
+
+**Amendment (per artifact §5b):**
+
+- The DB schema and the four-axis model are **preserved unchanged** — no migration needed.
+- The user-facing UI is replaced. The PermissionCard exposes only `Allow` (default), `Just once`, `Change scope…`, `Always allow for this project` checkbox, and Deny. `lifetime = session` is the default for `Allow`. `lifetime = task` is forced when `Just once` is clicked. `lifetime = project` is set when the checkbox is ticked. `lifetime = forever` is reachable only from the Capabilities settings tab.
+- A **three-tier risk model** is introduced:
+  - Tier 0 (read) — pre-approved at connector install; logged in run timeline; no card.
+  - Tier 1 (reversible writes) — PermissionCard inline.
+  - Tier 2 (irreversible / blast-radius) — modal with type-to-confirm; "Always allow" is **disabled** at this tier; trust mode is ignored.
+- Capability assignments to tiers live in the capability registry per the artifact §5b table.
+- Edge cases (rapid-repeat passive offer, batch plan-card, denied-then-asked-again, expired-grant badge, prompt-injection downgrade) per artifact §5b.
+
+The amendment goes at the bottom of `docs/architecture/permissions-model.md` under a `## 2026-04-18 amendment` heading and links to this spec and to the artifact.
+
+### A2 — `CLAUDE.md` invariant #1 (write confirmation)
+
+**Currently:** *"Every write action requires user confirmation. Non-negotiable in Phase 1. Exception: trust-level-high users can auto-confirm low-risk writes (Notion append, GitHub comment). Sends are always gated."*
+
+**Amendment (per artifact §5c):**
+
+> Every write action is presented to the user *before* execution. The presentation depends on capability tier:
+>
+> - **Tier 0 (read):** no preview, logged silently in the run timeline.
+> - **Tier 1 (reversible write):** inline `WritePreviewCard` with `Confirm / Edit / Refine / Cancel`. On confirm, the card transforms to a "Sent" state and an undo toast appears for 10 s (interactive) or 30 s (scheduled). On failure, the card transforms to "Failed — Retry / Edit / Cancel."
+> - **Tier 2 (irreversible / blast-radius — including any send to audience > 3):** modal with type-to-confirm and a recipient-list review. Trust mode does not apply.
+>
+> A user may set, per connector, a trust mode (`Strict / Balanced / Trusted`) that relaxes Tier-1 to "Preview, auto-confirm after 5 s" or "Auto for reversible." Tier 2 is unaffected.
+>
+> Cross-connector writes use the saga pattern: cheapest-to-undo first; the undo toast labels honestly which steps it can and cannot reverse. A failed undo offers a compensating action (delete from Slack, send retraction, etc.) — never silent.
+
+The block goes under "Core architectural invariants" in `CLAUDE.md`, linking to this spec and the artifact §5c.
+
+### A3 — `apps/web` Home route
+
+**Currently:** the Home route presumably opens a dashboard or chat. Per artifact §3a, Home becomes an operations center that **explicitly rejects the chat-first home**. This is not contradicting any existing rule (no ADR specifies a Home), but it's a meaningful product decision worth noting in the implementation plan and probably in `apps/web/CLAUDE.md` if one exists.
+
+## Tech-stack additions
+
+The artifact assumes a few libraries that the current scaffold may not have. Add to `apps/web/package.json`:
+
+- `cmdk` — Paco Coursey's command-palette primitive, for `⌘K` and `⌘P`.
+- `@radix-ui/react-*` — already partly present; ensure `Select`, `Popover`, `Tooltip`, `DropdownMenu`, `ContextMenu`, `Tabs`, `Dialog` are installed.
+- `framer-motion` — for spring-based arrivals, layout transitions, breathing keyframe variants.
+- `lucide-react` — icon library.
+- `@tanstack/react-virtual` — virtualization for long chat scrollback (artifact §6 large-data).
+
+Optional / behind a license decision:
+
+- Söhne webfont files (Klim Type Foundry license — ~$4–10k). Falls back to Inter Display + Inter (free) — see artifact §8 risk #2. Inter is the implementation default; Söhne is a token-only swap when licensed.
+- Berkeley Mono (Berkeley Graphics license — restricted for IDE-like use). Falls back to Commit Mono (OFL free). Commit Mono is the implementation default; Berkeley is a token-only swap when legal sign-off lands. See artifact §8 risk #1.
+
+## Feature flags
+
+Per artifact §8 risk #3:
+
+- `VISUAL_V2` — gates tokens, shell, primitives, page layouts. Per-user. Off by default during rollout. Ships first, can land independently of `INTERACTION_V2`.
+- `INTERACTION_V2` — gates the new PermissionCard / WritePreviewCard / capability-tier behavior. Off by default. Ships behind its own flag so visual rollout can proceed if interaction work slips.
+- Per-user "Use classic Axis" escape hatch in Settings → Appearance, available for 30 days after a user is moved into `VISUAL_V2`.
+- Auto-rollback metric gates: revert rate > 15 % in 24 h, accessibility violations in prod, error rate on new components > 2× baseline.
+
+Old code stays in place during Phases 0–2 of the artifact's plan (= weeks 1–4) and is deleted only after 60 days of stable 100 % rollout.
+
+## Migration order
+
+Lifted directly from artifact §8. Phases 0–4, weeks 1–14. The implementation plan that follows this spec will turn each phase's bullets into ordered tickets with file paths, owners, and acceptance criteria.
+
+- Phase 0 (week 1) — tokens.
+- Phase 1 (weeks 2–3) — primitives in `packages/design-system`.
+- Phase 2 (week 4) — shell + ⌘K + shortcut overlay.
+- Phase 3 (weeks 5–10) — pages, in this order: Chat → Home → Permissions+Writes (parallel) → Connections → Memory → History+Activity → Settings+Team → Admin.
+- Phase 4 (weeks 11–14) — mobile follow-on (iOS/Android consume the design tokens from `packages/design-system`).
+
+## Risks (in addition to the artifact's §8 risks)
+
+- **The Phase 3 page order conflicts with the live `/chat` page being the only thing currently usable.** During weeks 5–6, Chat will be rebuilt while users (or beta users) might rely on the old surface. Mitigation: the `VISUAL_V2` flag must be per-page-routable, not just per-user, so the new Chat can ship to a slice while old History/Activity/Memory still render.
+- **Backend tier registry is on the critical path for INTERACTION_V2.** No tiers means no PermissionCard. The implementation plan must front-load the registry change or risk weeks of frontend work waiting on backend metadata.
+- **The artifact's "operations-center Home" assumes there are running runs and pending approvals to display.** For a brand-new user, that surface is empty. The empty state per artifact §6 ("Nothing yet" + "Start a run") is the answer; the implementation plan must verify the empty-state path is not an afterthought.
+- **The artifact deletes breadcrumbs.** Some sub-routes (settings tabs, admin sub-pages) currently rely on them implicitly. Each instance needs the back-arrow + parent-label pattern from artifact §4 — listing those sites is a Phase 2 task.
+- **`packages/design-system` currently uses the old dark theme tokens** (per the audit, `#0a0a0b` bg, `#7c5cff` accent — unused by web). Those tokens are deleted; the package is reseeded with the artifact's token set.
 
 ## Open questions for review
 
-None — the user delegated open decisions ("do whatever you feel is most good for the startup") on 2026-04-18. If anything in this spec doesn't match what they had in mind, this is the moment to flag it.
+None — all decided 2026-04-18.
+
+- **Sans:** Inter Display + Inter for V1. Söhne is a future token-swap upgrade once budget approves.
+- **Mono:** Commit Mono for V1. Berkeley Mono is a future token-swap upgrade after legal sign-off.
+
+The spec is fully decided. Implementation plan can begin.
