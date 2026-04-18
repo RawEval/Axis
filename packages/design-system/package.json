@@ -12,6 +12,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "@radix-ui/react-tooltip": "^1.1.4",
     "clsx": "^2.1.1"
   },
   "devDependencies": {
@@ -26,7 +30,7 @@
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
-    "react": ">=18",
-    "framer-motion": ">=11"
+    "framer-motion": ">=11",
+    "react": ">=18"
   }
 }
