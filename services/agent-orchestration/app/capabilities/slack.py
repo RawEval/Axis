@@ -10,6 +10,42 @@ from typing import Any
 
 from app.capabilities.base import Capability, CapabilityResult, Citation
 from app.clients.connector_manager import ConnectorManagerClient
+from app.db import db
+from app.events import publish as publish_event
+from app.repositories.writes import WritesRepository
+from app.writeback.resolver import ResolutionError, SlackChannelResolver
+
+
+_NULL_ACTION_ID = "00000000-0000-0000-0000-000000000000"
+
+
+class _SlackChannelsAdapter:
+    """Adapter that lets ``SlackChannelResolver`` call the connector-manager
+    HTTP API instead of holding a direct Slack client. The resolver only
+    needs ``async __call__() -> list[dict]`` returning normalized channel
+    dicts (``id``, ``name``, ``is_private``, ``num_members``, ``topic``).
+    """
+
+    def __init__(
+        self,
+        cm: ConnectorManagerClient,
+        *,
+        user_id: str,
+        project_id: str,
+    ) -> None:
+        self._cm = cm
+        self._user_id = user_id
+        self._project_id = project_id
+
+    async def __call__(self) -> list[dict[str, Any]]:
+        resp = await self._cm.slack_channels(
+            user_id=self._user_id,
+            project_id=self._project_id,
+            limit=200,
+        )
+        if "error" in resp:
+            return []
+        return resp.get("channels", []) or []
 
 
 def _project_guard(project_id: str | None) -> CapabilityResult | None:
@@ -193,10 +229,11 @@ class _SlackUserProfile:
 class _SlackPost:
     name: str = "connector.slack.post"
     description: str = (
-        "Post a message to a Slack channel or reply in a thread. This is "
-        "a WRITE action that requires user confirmation before executing. "
-        "Use when the user asks 'send a message to #general about the deploy' "
-        "or 'reply to Alice's question in the thread'."
+        "Post a message to a Slack channel or reply in a thread. WRITE "
+        "action — the user sees a diff preview and must confirm before "
+        "the message is posted. Pass ``channel_query`` (free-text channel "
+        "name like 'product' or '#product-eng'); if multiple channels "
+        "match, the user is asked to pick one before confirming."
     )
     scope: str = "write"
     default_permission: str = "ask"
@@ -206,25 +243,191 @@ class _SlackPost:
         self.input_schema = {
             "type": "object",
             "properties": {
-                "channel": {"type": "string", "description": "Channel ID to post in."},
+                "channel_query": {
+                    "type": "string",
+                    "description": "Free-text channel name like 'product' or '#product-eng'.",
+                },
                 "text": {"type": "string", "description": "Message text to post."},
-                "thread_ts": {"type": "string", "description": "If replying in a thread, the parent message timestamp."},
+                "thread_ts": {
+                    "type": "string",
+                    "description": "If replying in a thread, the parent message timestamp.",
+                },
             },
-            "required": ["channel", "text"],
+            "required": ["channel_query", "text"],
         }
 
-    async def __call__(self, *, user_id: str, project_id: str | None, org_id: str | None, inputs: dict[str, Any]) -> CapabilityResult:
-        if err := _project_guard(project_id): return err
-        client = ConnectorManagerClient()
-        try:
-            resp = await client.slack_post(user_id=user_id, project_id=project_id, channel=inputs["channel"], text=inputs["text"], thread_ts=inputs.get("thread_ts"))
-        except Exception as e:
-            return CapabilityResult(summary="slack post failed", content=[], error=str(e))
-        if err := _error_guard(resp, "slack post"): return err
-        return CapabilityResult(
-            summary=f"posted to {resp.get('channel', inputs['channel'])}",
-            content=[resp],
-            citations=[Citation(source_type="slack_message", provider="slack", ref_id=resp.get("ts"), title="Posted message", excerpt=inputs["text"][:200])],
+    async def __call__(
+        self,
+        *,
+        user_id: str,
+        project_id: str | None,
+        org_id: str | None,
+        inputs: dict[str, Any],
+    ) -> CapabilityResult:
+        if err := _project_guard(project_id):
+            return err
+
+        text = inputs.get("text") or ""
+        thread_ts = inputs.get("thread_ts")
+        if not text:
+            return CapabilityResult(
+                summary="missing text",
+                content=[],
+                error="text is required",
+            )
+
+        # Backward compat: if the caller already has a resolved Slack channel
+        # id (starts with 'C'), skip the resolver and go straight to a single
+        # candidate path.
+        direct_channel = (inputs.get("channel") or "").strip()
+        channel_query = (inputs.get("channel_query") or "").strip()
+
+        if not direct_channel and not channel_query:
+            return CapabilityResult(
+                summary="missing channel_query",
+                content=[],
+                error="channel_query (or channel) is required",
+            )
+
+        cm = ConnectorManagerClient()
+        candidates: list[Any]
+
+        if direct_channel and direct_channel.startswith("C"):
+            from app.writeback.resolver import TargetCandidate
+            candidates = [
+                TargetCandidate(
+                    kind="slack_channel",
+                    id=direct_channel,
+                    label=f"#{direct_channel}",
+                    sub_label=None,
+                    context=None,
+                    metadata=None,
+                )
+            ]
+        else:
+            resolver = SlackChannelResolver(
+                _SlackChannelsAdapter(cm, user_id=user_id, project_id=project_id)
+            )
+            try:
+                candidates = await resolver.resolve(
+                    channel_query or direct_channel,
+                    user_id=user_id,
+                    project_id=project_id,
+                )
+            except ResolutionError as e:
+                return CapabilityResult(
+                    summary="channel resolution failed",
+                    content=[],
+                    error=str(e),
+                )
+
+        if not candidates:
+            return CapabilityResult(
+                summary=f"no channel matches '{channel_query or direct_channel}'",
+                content=[],
+                error=(
+                    f"Couldn't find any channel matching "
+                    f"'{channel_query or direct_channel}' in Slack."
+                ),
+            )
+
+        action_id = inputs.get("_action_id") or _NULL_ACTION_ID
+        repo = WritesRepository(db.raw)
+
+        if len(candidates) == 1:
+            chosen = candidates[0]
+            diff = {
+                "before": None,
+                "after": {
+                    "channel": chosen.id,
+                    "text": text,
+                    "thread_ts": thread_ts,
+                },
+                "summary": f"Post to Slack channel: {text[:50]}",
+            }
+            pending = await repo.create_pending(
+                action_id=action_id,
+                user_id=user_id,
+                project_id=project_id,
+                tool="slack",
+                target_id=chosen.id,
+                target_type="slack_channel",
+                diff=diff,
+                before_state={},
+                target_options=None,
+                target_chosen=chosen.as_dict(),
+            )
+            await publish_event(
+                user_id=user_id,
+                project_id=project_id,
+                event_type="write.preview",
+                payload={
+                    "write_action_id": pending["write_action_id"],
+                    "snapshot_id": pending["snapshot_id"],
+                    "tool": "slack",
+                    "target_id": chosen.id,
+                    "target": chosen.as_dict(),
+                    "diff": diff,
+                },
+            )
+            return CapabilityResult(
+                summary=(
+                    f"slack post pending — to {chosen.label}, "
+                    f"awaiting user confirmation"
+                ),
+                content={
+                    "write_action_id": pending["write_action_id"],
+                    "snapshot_id": pending["snapshot_id"],
+                    "status": "pending_confirmation",
+                    "target": chosen.as_dict(),
+                },
+                citations=[
+                    Citation(
+                        source_type="slack_channel",
+                        provider="slack",
+                        ref_id=chosen.id,
+                        title=chosen.label,
+                        excerpt=text[:200],
+                    )
+                ],
+            )
+
+        # N>1 — stage the picker.
+        diff = {
+            "before": None,
+            "after": {
+                "channel": None,
+                "text": text,
+                "thread_ts": thread_ts,
+            },
+            "summary": f"Post to Slack channel: {text[:50]} (channel pending pick)",
+        }
+        pending = await repo.create_pending(
+            action_id=action_id,
+            user_id=user_id,
+            project_id=project_id,
+            tool="slack",
+            target_id="",
+            target_type="slack_channel",
+            diff=diff,
+            before_state={},
+            target_options=[c.as_dict() for c in candidates],
+            target_chosen=None,
+        )
+        await publish_event(
+            user_id=user_id,
+            project_id=project_id,
+            event_type="write.target_pick_required",
+            payload={
+                "write_action_id": pending["write_action_id"],
+                "snapshot_id": pending["snapshot_id"],
+                "tool": "slack",
+                "options": [c.as_dict() for c in candidates],
+                "diff": diff,
+            },
+        )
+        return CapabilityResult.pending_target_pick(
+            write_id=pending["write_action_id"]
         )
 
 
