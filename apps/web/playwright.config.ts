@@ -9,7 +9,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://127.0.0.1:3001',
     trace: 'on-first-retry',
     // Lock viewport for consistent snapshots
     viewport: { width: 1280, height: 800 },
@@ -32,7 +32,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm dev',
-    url: 'http://localhost:3001',
+    url: 'http://127.0.0.1:3001',
     reuseExistingServer: true,
     timeout: 60_000,
   },

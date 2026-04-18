@@ -34,14 +34,18 @@ export async function prepareForSnapshot(page: Page, theme: Theme): Promise<void
 /**
  * Sets a fake auth cookie so middleware-protected routes load.
  * The middleware only checks for cookie *presence*, not validity.
+ *
+ * Uses `url` instead of `domain` because chromium drops cookies with
+ * `domain: 'localhost'` on outbound requests (a known Chromium quirk
+ * around localhost cookie scoping). The `url` form lets the browser
+ * derive the right scope from the request URL.
  */
 export async function fakeAuthCookie(context: BrowserContext): Promise<void> {
   await context.addCookies([
     {
       name: 'axis.token',
       value: 'e2e-test-token',
-      domain: 'localhost',
-      path: '/',
+      url: 'http://127.0.0.1:3001',
       expires: Math.floor(Date.now() / 1000) + 3600,
       httpOnly: false,
       secure: false,
