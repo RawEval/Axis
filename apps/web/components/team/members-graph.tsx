@@ -32,7 +32,7 @@ export function MembersGraph({
     <div className="flex flex-col items-center gap-6 py-4">
       <RootNode name={orgName} />
 
-      {tiers.map(({ role, members: group }, idx) => (
+      {tiers.map(({ role, members: group }) => (
         <div key={role} className="flex w-full flex-col items-center gap-2">
           <div className="h-6 w-px bg-edge" aria-hidden />
           <div className="flex flex-wrap items-center justify-center gap-3">

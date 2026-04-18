@@ -1,14 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Badge,
-  Button,
-  Panel,
-  PanelBody,
-  PanelFooter,
-  PanelHeader,
-} from '@/components/ui';
+import { Button } from '@/components/ui';
 import { CitedResponse, type Citation } from '@/components/chat/cited-response';
 import { LiveTaskTree } from '@/components/chat/live-task-tree';
 import {
@@ -78,6 +71,7 @@ export default function ChatPage() {
       const timer = setTimeout(() => clearEvents(), 1500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [events, clearEvents]);
 
   const onSubmit = async (e: React.FormEvent) => {

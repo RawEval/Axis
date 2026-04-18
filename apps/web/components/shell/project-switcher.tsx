@@ -2,7 +2,6 @@
 
 import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { Badge, Button, Modal } from '@/components/ui';
 import { useProjectStore } from '@/lib/project-store';
 import { type Project, useProjects } from '@/lib/queries/projects';

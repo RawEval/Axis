@@ -58,7 +58,7 @@ export default function SettingsPage() {
         </PanelHeader>
         <PanelBody>
           <p className="text-sm text-ink-secondary">
-            End the current session on this device. You'll need to sign in again.
+            End the current session on this device. You&apos;ll need to sign in again.
           </p>
           <div className="mt-3">
             <Button variant="danger" size="sm" onClick={signOut}>

@@ -115,7 +115,7 @@ export function InviteModal({
         {acceptUrl ? (
           <div className="space-y-3">
             <p className="text-sm text-ink-secondary">
-              Share this link with your teammate. They'll be prompted to sign in
+              Share this link with your teammate. They&apos;ll be prompted to sign in
               or create an account with the matching email.
             </p>
             <div className="flex items-center gap-2 rounded border border-edge bg-canvas-subtle px-3 py-2">
