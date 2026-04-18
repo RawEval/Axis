@@ -222,6 +222,46 @@ class ConnectorManagerClient:
             body=body,
         )
 
+    # ---------- GitHub write-path ----------------------------------------
+
+    async def github_comment(
+        self,
+        *,
+        user_id: str,
+        project_id: str,
+        repo: str,
+        issue_number: int,
+        body: str,
+    ) -> dict[str, Any]:
+        return await self._tool_call(
+            "github/comment",
+            user_id=user_id,
+            project_id=project_id,
+            repo=repo,
+            issue_number=issue_number,
+            body=body,
+        )
+
+    async def github_create_issue(
+        self,
+        *,
+        user_id: str,
+        project_id: str,
+        repo: str,
+        title: str,
+        body: str = "",
+        labels: list[str] | None = None,
+    ) -> dict[str, Any]:
+        return await self._tool_call(
+            "github/create-issue",
+            user_id=user_id,
+            project_id=project_id,
+            repo=repo,
+            title=title,
+            body=body,
+            labels=labels,
+        )
+
     async def notion_append(
         self,
         *,

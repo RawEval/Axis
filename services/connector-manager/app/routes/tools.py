@@ -255,6 +255,83 @@ def _normalize_github_hit(hit: dict[str, Any]) -> GitHubSearchResult:
     )
 
 
+# ---- GitHub extended: comment + create issue ----
+
+
+async def _get_github_client(user_id: str, project_id: str) -> GitHubClient:
+    """Shared helper — decrypt the GitHub token and return a live client."""
+    repo = ConnectorsRepository(db.raw)
+    token_row = await repo.get_token(user_id, project_id, "github")
+    if token_row is None:
+        raise HTTPException(404, "github is not connected for this project")
+    try:
+        access_token = decrypt_token(token_row["auth_token_encrypted"])
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, "failed to decrypt github token") from e
+    return GitHubClient(access_token=access_token)
+
+
+def _split_repo(repo: str) -> tuple[str, str]:
+    """Split an "owner/repo" string. Raises 400 if malformed."""
+    parts = repo.split("/", 1)
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        raise HTTPException(400, "repo must be in 'owner/repo' format")
+    return parts[0], parts[1]
+
+
+class GitHubCommentRequest(BaseModel):
+    user_id: str
+    project_id: str
+    repo: str            # "owner/repo"
+    issue_number: int
+    body: str
+
+
+@router.post("/tools/github/comment")
+async def github_comment(body: GitHubCommentRequest) -> dict[str, Any]:
+    """Comment on an issue or PR — only called AFTER user confirmation
+    (write gate). Issue numbers are unambiguous so no resolver needed.
+    """
+    client = await _get_github_client(body.user_id, body.project_id)
+    owner, repo = _split_repo(body.repo)
+    try:
+        res = await client.create_issue_comment(
+            owner, repo, body.issue_number, body.body
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("github_comment_failed", error=str(e))
+        raise HTTPException(502, f"github comment error: {e}") from e
+    return {"ok": True, "id": res.get("id"), "url": res.get("html_url")}
+
+
+class GitHubCreateIssueRequest(BaseModel):
+    user_id: str
+    project_id: str
+    repo: str            # "owner/repo"
+    title: str
+    body: str = ""
+    labels: list[str] = Field(default_factory=list)
+
+
+@router.post("/tools/github/create-issue")
+async def github_create_issue(body: GitHubCreateIssueRequest) -> dict[str, Any]:
+    """Create an issue — only called AFTER user confirmation (write gate)."""
+    client = await _get_github_client(body.user_id, body.project_id)
+    owner, repo = _split_repo(body.repo)
+    try:
+        res = await client.create_issue(
+            owner=owner,
+            repo=repo,
+            title=body.title,
+            body=body.body,
+            labels=body.labels or None,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("github_create_issue_failed", error=str(e))
+        raise HTTPException(502, f"github create-issue error: {e}") from e
+    return {"ok": True, "number": res.get("number"), "url": res.get("html_url")}
+
+
 # ---------------- Google Drive ----------------
 
 

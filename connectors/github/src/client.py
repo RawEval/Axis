@@ -67,6 +67,28 @@ class GitHubClient:
             resp.raise_for_status()
             return resp.json()
 
+    async def create_issue(
+        self,
+        *,
+        owner: str,
+        repo: str,
+        title: str,
+        body: str = "",
+        labels: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """POST /repos/{owner}/{repo}/issues — gated upstream."""
+        payload: dict[str, Any] = {"title": title, "body": body}
+        if labels:
+            payload["labels"] = labels
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{GITHUB_API_BASE}/repos/{owner}/{repo}/issues",
+                headers=self._headers,
+                json=payload,
+            )
+            resp.raise_for_status()
+            return resp.json()
+
     async def authenticated_user(self) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
