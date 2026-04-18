@@ -2,6 +2,24 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WritePreviewCard } from './write-preview-card';
+import type { TargetCandidate } from '../target-picker';
+
+const TARGETS: TargetCandidate[] = [
+  {
+    kind: 'email_address',
+    id: 'mrinal@a.com',
+    label: 'Mrinal Raj',
+    sub_label: 'mrinal@a.com',
+    context: null,
+  },
+  {
+    kind: 'email_address',
+    id: 'mrinal@b.com',
+    label: 'Mrinal Patel',
+    sub_label: 'mrinal@b.com',
+    context: null,
+  },
+];
 
 describe('WritePreviewCard', () => {
   it('renders the title', () => {
@@ -81,5 +99,54 @@ describe('WritePreviewCard', () => {
       </WritePreviewCard>,
     );
     expect(screen.getByRole('button', { name: /sending/i })).toBeDisabled();
+  });
+
+  it('renders TargetPicker when targetOptions has 2+ items', () => {
+    const onChooseTarget = vi.fn();
+    render(
+      <WritePreviewCard
+        title="Gmail · Send"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        targetOptions={TARGETS}
+        onChooseTarget={onChooseTarget}
+      >
+        body
+      </WritePreviewCard>,
+    );
+    expect(screen.getByText(/Multiple candidates for Gmail · Send/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mrinal Raj/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mrinal Patel/ })).toBeInTheDocument();
+    // Confirm/Cancel footer must be hidden while picking.
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+  });
+
+  it('renders body when targetOptions has 0 or 1 item', () => {
+    const { rerender } = render(
+      <WritePreviewCard
+        title="Gmail · Send"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        targetOptions={[]}
+      >
+        body-empty
+      </WritePreviewCard>,
+    );
+    expect(screen.getByText('body-empty')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
+
+    rerender(
+      <WritePreviewCard
+        title="Gmail · Send"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        targetOptions={[TARGETS[0]]}
+      >
+        body-one
+      </WritePreviewCard>,
+    );
+    expect(screen.getByText('body-one')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeInTheDocument();
   });
 });

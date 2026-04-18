@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import clsx from 'clsx';
 import { Card, CardHeader, CardBody, CardFooter } from '../card';
 import { Button } from '../button';
+import { TargetPicker, type TargetCandidate } from '../target-picker';
 
 export interface WritePreviewMeta {
   label: string;
@@ -19,6 +20,9 @@ export interface WritePreviewCardProps {
   onEdit?: () => void;
   onRefine?: () => void;
   busy?: boolean;
+  targetOptions?: ReadonlyArray<TargetCandidate>;
+  onChooseTarget?: (c: TargetCandidate) => void;
+  chooseBusy?: string | null;
   className?: string;
 }
 
@@ -31,8 +35,16 @@ export function WritePreviewCard({
   onEdit,
   onRefine,
   busy = false,
+  targetOptions,
+  onChooseTarget,
+  chooseBusy,
   className,
 }: WritePreviewCardProps) {
+  const showPicker =
+    !!targetOptions &&
+    targetOptions.length > 1 &&
+    !chooseBusy?.startsWith('done:');
+
   return (
     <Card className={clsx('shadow-e1', className)}>
       <CardHeader className="flex items-center justify-between">
@@ -42,39 +54,54 @@ export function WritePreviewCard({
         <span className="text-body-s font-medium text-ink">{title}</span>
       </CardHeader>
 
-      {meta && meta.length > 0 && (
-        <div className="px-5 py-3 border-b border-edge-subtle space-y-1">
-          {meta.map((m, i) => (
-            <div key={i} className="flex items-baseline gap-3 text-body-s">
-              <span className="w-12 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-tertiary">
-                {m.label}
-              </span>
-              <span className="text-ink">{m.value}</span>
+      {showPicker ? (
+        <CardBody>
+          <TargetPicker
+            candidates={targetOptions!}
+            onChoose={onChooseTarget!}
+            busy={chooseBusy}
+            prompt={`Multiple candidates for ${title}. Pick one:`}
+          />
+        </CardBody>
+      ) : (
+        <>
+          {meta && meta.length > 0 && (
+            <div className="px-5 py-3 border-b border-edge-subtle space-y-1">
+              {meta.map((m, i) => (
+                <div key={i} className="flex items-baseline gap-3 text-body-s">
+                  <span className="w-12 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-tertiary">
+                    {m.label}
+                  </span>
+                  <span className="text-ink">{m.value}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+
+          <CardBody>{children}</CardBody>
+        </>
       )}
 
-      <CardBody>{children}</CardBody>
-
-      <CardFooter className="flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
-          Cancel
-        </Button>
-        {onEdit && (
-          <Button variant="secondary" size="sm" onClick={onEdit} disabled={busy}>
-            Edit
+      {!showPicker && (
+        <CardFooter className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+            Cancel
           </Button>
-        )}
-        {onRefine && (
-          <Button variant="secondary" size="sm" onClick={onRefine} disabled={busy}>
-            Refine
+          {onEdit && (
+            <Button variant="secondary" size="sm" onClick={onEdit} disabled={busy}>
+              Edit
+            </Button>
+          )}
+          {onRefine && (
+            <Button variant="secondary" size="sm" onClick={onRefine} disabled={busy}>
+              Refine
+            </Button>
+          )}
+          <Button variant="primary" size="sm" onClick={onConfirm} disabled={busy}>
+            {busy ? 'Sending…' : 'Confirm'}
           </Button>
-        )}
-        <Button variant="primary" size="sm" onClick={onConfirm} disabled={busy}>
-          {busy ? 'Sending…' : 'Confirm'}
-        </Button>
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 }
