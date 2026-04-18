@@ -1,7 +1,6 @@
 'use client';
 
 import clsx from 'clsx';
-import { type ReactNode } from 'react';
 import { dismissToast, pushToast, useToasts, type ToastTone } from './toast-store';
 
 export { useToasts, dismissToast, pushToast };
