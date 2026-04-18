@@ -17,6 +17,7 @@ export type CapabilityId =
   | 'connector.gdrive.search'
   | 'connector.gdrive.read_content'
   | 'connector.gdrive.create_doc'
+  | 'connector.gdrive.append'
   | 'connector.github.search'
   | 'connector.github.comment'
   | 'connector.github.create_issue';
@@ -45,6 +46,7 @@ export const CAPABILITIES: ReadonlyArray<CapabilityMeta> = [
   { id: 'connector.gdrive.search',         tier: 0, label: 'Search Google Drive',    description: 'Files and folders.' },
   { id: 'connector.gdrive.read_content',   tier: 0, label: 'Read Drive content',     description: 'Open Docs, Sheets, Slides text.' },
   { id: 'connector.gdrive.create_doc',     tier: 1, label: 'Create Google Doc',      description: 'Create a new doc in Drive.' },
+  { id: 'connector.gdrive.append',         tier: 1, label: 'Append to Google Doc',   description: 'Add text to the end of an existing doc.' },
   { id: 'connector.github.search',         tier: 0, label: 'Search GitHub',          description: 'Issues, PRs, code.' },
   { id: 'connector.github.comment',        tier: 1, label: 'Comment on GitHub',      description: 'Comment on issues and PRs.' },
   { id: 'connector.github.create_issue',   tier: 1, label: 'Create GitHub issue',    description: 'File a new issue in a repo.' },

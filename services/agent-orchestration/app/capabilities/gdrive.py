@@ -150,11 +150,57 @@ class _GDriveCreateDoc:
         )
 
 
+# ── connector.gdrive.append ────────────────────────────────────────────
+
+
+@dataclass
+class _GDriveAppend:
+    name: str = "connector.gdrive.append"
+    description: str = (
+        "Append plain text to the end of an existing Google Doc. WRITE "
+        "action requiring user confirmation. Use when the user asks 'add "
+        "this to the meeting notes' or 'append to the Q3 doc'. Provide the "
+        "Drive file id (returned by gdrive.search)."
+    )
+    scope: str = "write"
+    default_permission: str = "ask"
+    input_schema: dict[str, Any] = None
+
+    def __post_init__(self) -> None:
+        self.input_schema = {
+            "type": "object",
+            "properties": {
+                "doc_id": {"type": "string", "description": "Google Drive file id of the doc to append to."},
+                "text": {"type": "string", "description": "Plain text to append. Newlines preserved."},
+            },
+            "required": ["doc_id", "text"],
+        }
+
+    async def __call__(self, *, user_id: str, project_id: str | None, org_id: str | None, inputs: dict[str, Any]) -> CapabilityResult:
+        if err := _project_guard(project_id): return err
+        client = ConnectorManagerClient()
+        try:
+            resp = await client._tool_call(
+                "gdrive/append",
+                user_id=user_id, project_id=project_id,
+                doc_id=inputs["doc_id"], text=inputs["text"],
+            )
+        except Exception as e:
+            return CapabilityResult(summary="gdrive append failed", content=[], error=str(e))
+        if err := _error_guard(resp, "gdrive append"): return err
+        return CapabilityResult(
+            summary=f"appended to Google Doc {inputs['doc_id']}",
+            content=[resp],
+            citations=[Citation(source_type="gdrive_file", provider="gdrive", ref_id=inputs["doc_id"], url=None, title=None, excerpt=f"Appended {len(inputs['text'])} chars")],
+        )
+
+
 # ── Registry ────────────────────────────────────────────────────────────
 
 CAPABILITIES = [
     _GDriveSearch(),
     _GDriveReadContent(),
     _GDriveCreateDoc(),
+    _GDriveAppend(),
 ]
 CAPABILITY = CAPABILITIES[0]
