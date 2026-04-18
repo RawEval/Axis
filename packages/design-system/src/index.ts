@@ -42,3 +42,9 @@ export {
 } from './components/dropdown-menu';
 export { Tooltip, TooltipProvider, type TooltipProps } from './components/tooltip';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/tabs';
+export {
+  BreathingPulse,
+  type BreathingPulseProps,
+  type BreathingTone,
+  type BreathingSize,
+} from './components/breathing-pulse';
