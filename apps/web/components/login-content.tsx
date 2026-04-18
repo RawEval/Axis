@@ -3,14 +3,8 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import {
-  Button,
-  Field,
-  Input,
-  Panel,
-  PanelBody,
-  PanelHeader,
-} from '@/components/ui';
+import { Button } from '@axis/design-system';
+import { Field, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useLogin } from '@/lib/queries/auth';
 
@@ -36,63 +30,65 @@ export default function LoginContent() {
         err instanceof ApiError
           ? typeof err.detail === 'string'
             ? err.detail
-            : 'login failed'
-          : 'login failed',
+            : 'Login failed.'
+          : 'Login failed.',
       );
     }
   };
 
   return (
-    <Panel>
-      <PanelHeader>
-        <div>
-          <div className="text-base font-semibold text-ink">Sign in</div>
-          <div className="text-xs text-ink-tertiary">Welcome back.</div>
-        </div>
-      </PanelHeader>
-      <form onSubmit={onSubmit}>
-        <PanelBody className="space-y-4">
-          <Field label="Email" required>
-            <Input
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-            />
-          </Field>
-          <Field label="Password" required>
-            <Input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Field>
-          {error && (
-            <div className="rounded border border-danger/20 bg-danger-bg px-3 py-2 text-xs text-danger-fg">
-              {error}
-            </div>
-          )}
-          <Button
-            type="submit"
-            size="md"
-            className="w-full"
-            disabled={login.isPending}
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h1 className="font-display text-display-m text-ink">Sign in</h1>
+        <p className="text-body text-ink-secondary">Welcome back.</p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <Field label="Email" required>
+          <Input
+            type="email"
+            required
+            autoFocus
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+          />
+        </Field>
+
+        <Field label="Password" required>
+          <Input
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-body-s text-danger"
           >
-            {login.isPending ? 'Signing in…' : 'Sign in'}
-          </Button>
-          <div className="text-center text-xs text-ink-tertiary">
-            No account?{' '}
-            <Link href="/signup" className="text-brand-500 hover:text-brand-600">
-              Create one
-            </Link>
+            {error}
           </div>
-        </PanelBody>
+        )}
+
+        <Button type="submit" size="md" className="w-full" loading={login.isPending}>
+          Sign in
+        </Button>
       </form>
-    </Panel>
+
+      <p className="text-body-s text-ink-tertiary">
+        No account?{' '}
+        <Link
+          href="/signup"
+          className="text-accent hover:text-accent-hover underline-offset-4 hover:underline"
+        >
+          Create one
+        </Link>
+      </p>
+    </div>
   );
 }
