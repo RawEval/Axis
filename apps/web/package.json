@@ -10,7 +10,10 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next .turbo",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:update": "playwright test --update-snapshots",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@axis/design-system": "workspace:*",
@@ -27,6 +30,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",
