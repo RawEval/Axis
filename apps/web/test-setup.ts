@@ -21,7 +21,7 @@ class ResizeObserverPolyfill {
   unobserve(): void {}
   disconnect(): void {}
 }
-(globalThis as { ResizeObserver?: typeof ResizeObserverPolyfill }).ResizeObserver =
+(globalThis as unknown as { ResizeObserver: typeof ResizeObserverPolyfill }).ResizeObserver =
   ResizeObserverPolyfill;
 
 // jsdom doesn't implement Element.scrollIntoView (cmdk auto-scrolls selected item)
