@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  LiveTaskTree as LiveTaskTreeUI,
+  type StepData,
+  type StepState,
+} from '@axis/design-system';
 import type { LiveEvent } from '@/lib/queries/live';
 
 /**
@@ -16,42 +21,58 @@ import type { LiveEvent } from '@/lib/queries/live';
  * We collapse the stream into a per-step "card" keyed on
  * ``payload.step + payload.name``. Later events for the same step mutate
  * the card's status/summary so the UI looks like a tree that fills in.
+ *
+ * The accumulated cards are then translated into the design-system
+ * primitive's `StepData` shape and rendered via `LiveTaskTreeUI`.
  */
 export function LiveTaskTree({ events }: { events: LiveEvent[] }) {
-  const steps = accumulateSteps(events);
+  const cards = accumulateSteps(events);
   const last = events[events.length - 1];
   const completed = events.some(
     (e) => e.type === 'task.completed' || e.type === 'task.failed',
   );
-  const running = last && !completed;
+  const running = Boolean(last) && !completed;
 
-  if (steps.length === 0 && !running) {
-    return null;
-  }
+  const steps: StepData[] = cards.map((c, i) => ({
+    id: `${c.step}:${c.name}:${i}`,
+    label: c.summary ? `${c.name || c.kind} — ${c.summary}` : c.name || c.kind,
+    state: STATUS_TO_STATE[c.status],
+  }));
 
-  return (
-    <div className="flex flex-col gap-1 font-mono text-xs">
-      {steps.map((s, i) => (
-        <StepRow key={i} step={s} />
-      ))}
-      {running && steps.every((s) => s.status !== 'running') && (
-        <div className="flex items-center gap-2 text-ink-tertiary">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
-          Thinking…
-        </div>
-      )}
-    </div>
-  );
+  const trailing =
+    running && cards.every((s) => s.status !== 'running') ? (
+      <div className="flex items-center gap-2 px-2 py-1 font-mono text-mono-s text-ink-tertiary">
+        <span aria-hidden className="inline-block h-2 w-2 animate-breathe rounded-full bg-agent-running" />
+        Thinking…
+      </div>
+    ) : null;
+
+  if (steps.length === 0 && !trailing) return null;
+
+  return <LiveTaskTreeUI steps={steps} trailing={trailing} />;
 }
 
-type StepStatus = 'running' | 'done' | 'error' | 'denied' | 'awaiting_permission';
+type StepCardStatus =
+  | 'running'
+  | 'done'
+  | 'error'
+  | 'denied'
+  | 'awaiting_permission';
 
 type StepCard = {
   step: number;
   kind: string;
   name: string;
-  status: StepStatus;
+  status: StepCardStatus;
   summary: string | null;
+};
+
+const STATUS_TO_STATE: Record<StepCardStatus, StepState> = {
+  running: 'running',
+  done: 'done',
+  error: 'failed',
+  denied: 'denied',
+  awaiting_permission: 'awaiting',
 };
 
 function accumulateSteps(events: LiveEvent[]): StepCard[] {
@@ -89,7 +110,7 @@ function accumulateSteps(events: LiveEvent[]): StepCard[] {
     }
 
     if (ev.type === 'step.completed') {
-      const status = (String(payload.status ?? 'done') as StepStatus) ?? 'done';
+      const status = (String(payload.status ?? 'done') as StepCardStatus) ?? 'done';
       const existing = byKey.get(key);
       byKey.set(key, {
         step,
@@ -102,36 +123,4 @@ function accumulateSteps(events: LiveEvent[]): StepCard[] {
   }
 
   return [...byKey.values()].sort((a, b) => a.step - b.step);
-}
-
-function StepRow({ step }: { step: StepCard }) {
-  const { status } = step;
-  const dot = {
-    running: 'bg-accent animate-pulse',
-    done: 'bg-success',
-    error: 'bg-danger',
-    denied: 'bg-warning',
-    awaiting_permission: 'bg-warning animate-pulse',
-  }[status];
-  const label = {
-    running: 'running',
-    done: 'done',
-    error: 'error',
-    denied: 'denied',
-    awaiting_permission: 'awaiting permission',
-  }[status];
-  return (
-    <div className="flex items-start gap-2">
-      <span className={`mt-1 inline-block h-2 w-2 shrink-0 rounded-full ${dot}`} />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-ink">{step.name || step.kind}</span>
-          <span className="text-ink-tertiary">· {label}</span>
-        </div>
-        {step.summary && (
-          <div className="mt-0.5 text-ink-tertiary">{step.summary}</div>
-        )}
-      </div>
-    </div>
-  );
 }
