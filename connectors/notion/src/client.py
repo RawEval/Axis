@@ -6,6 +6,7 @@ Docs: https://developers.notion.com/reference
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -30,6 +31,57 @@ class NotionClient:
             )
             resp.raise_for_status()
             return resp.json().get("results", [])
+
+    async def list_recent(
+        self,
+        *,
+        since: "datetime | None" = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Return Notion pages sorted by last_edited_time desc, paginated.
+        Pages older than `since` (if provided) cause the iteration to stop —
+        Notion sorts by edit time descending so once we see one older than
+        the cutoff, every subsequent page is also older.
+        """
+        pages: list[dict[str, Any]] = []
+        cursor: str | None = None
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            while len(pages) < limit:
+                body: dict[str, Any] = {
+                    "query": "",
+                    "page_size": min(100, limit - len(pages)),
+                    "sort": {"direction": "descending", "timestamp": "last_edited_time"},
+                }
+                if cursor:
+                    body["start_cursor"] = cursor
+                resp = await client.post(
+                    f"{NOTION_API_BASE}/search",
+                    headers=self._headers,
+                    json=body,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                for hit in data.get("results", []):
+                    if hit.get("object") != "page":
+                        continue
+                    if since is not None:
+                        edited_str = hit.get("last_edited_time")
+                        if edited_str:
+                            try:
+                                edited = datetime.fromisoformat(
+                                    edited_str.replace("Z", "+00:00")
+                                )
+                                if edited < since:
+                                    return pages
+                            except (ValueError, TypeError):
+                                pass
+                    pages.append(hit)
+                    if len(pages) >= limit:
+                        break
+                cursor = data.get("next_cursor")
+                if not data.get("has_more") or not cursor:
+                    break
+        return pages
 
     async def get_page(self, page_id: str) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=15.0) as client:
