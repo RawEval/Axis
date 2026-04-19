@@ -301,3 +301,37 @@ class ConnectorManagerClient:
             if resp.status_code >= 400:
                 return {"error": f"connector-manager returned {resp.status_code}"}
             return resp.json()
+
+    # ---------- Freshness ------------------------------------------------
+
+    async def freshen(
+        self, *, source: str, user_id: str, force: bool = False
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=8.0, verify=False) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base}/tools/{source}/freshen",
+                    json={"user_id": user_id, "force": force},
+                )
+            except httpx.TimeoutException:
+                return {"status": "network_error", "error": "freshen timeout"}
+            if resp.status_code >= 400:
+                return {"status": "vendor_error", "error": f"connector-manager {resp.status_code}"}
+            return resp.json()
+
+    async def sync_state(self, *, user_id: str) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+            resp = await client.get(
+                f"{self._base}/connectors/sync-state",
+                params={"user_id": user_id},
+            )
+            if resp.status_code >= 400:
+                return []
+            return resp.json().get("items", [])
+
+    async def sync_state_one(self, *, user_id: str, source: str) -> dict[str, Any] | None:
+        items = await self.sync_state(user_id=user_id)
+        for item in items:
+            if item.get("source") == source:
+                return item
+        return None
