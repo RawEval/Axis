@@ -8,6 +8,7 @@ Local ref: docs/references/slack/api-reference.md
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -169,6 +170,36 @@ class SlackClient:
         return await self._call(
             "reactions.add", channel=channel, timestamp=timestamp, name=name
         )
+
+    # ── Read: recent (aggregate) ────────────────────────────────────────
+
+    async def list_recent(
+        self,
+        *,
+        since: datetime | None = None,
+        limit: int = 200,
+    ) -> list[dict[str, Any]]:
+        """Aggregate messages across all joined channels, optionally filtered
+        by `since`. Each message dict is annotated with `channel_id` and
+        `channel_name` so callers can build event keys without a second lookup.
+        """
+        oldest = str(since.timestamp()) if since else None
+        channels = await self.list_channels(limit=200)
+        messages: list[dict[str, Any]] = []
+        for ch in channels:
+            if len(messages) >= limit:
+                break
+            try:
+                history = await self.channel_history(
+                    ch["id"], limit=min(100, limit - len(messages)), oldest=oldest,
+                )
+            except (SlackError, httpx.HTTPStatusError):
+                continue  # skip the channel; surface aggregate failures elsewhere
+            for m in history:
+                m["channel_id"] = ch["id"]
+                m["channel_name"] = ch.get("name")
+                messages.append(m)
+        return messages[:limit]
 
     # ── Identity ────────────────────────────────────────────────────────
 
