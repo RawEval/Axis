@@ -19,6 +19,7 @@ from app.config import settings
 from app.db import db
 from app.routes import oauth, oauth_apps, tools, webhooks
 from app.sync.gdrive_sync import gdrive_sync_loop
+from app.sync.gmail import gmail_poll_loop_v2  # noqa: F401 — side-effect registers GmailSyncWorker
 from app.sync.notion import notion_poll_loop_v2
 from app.sync.slack import slack_poll_loop_v2  # noqa: F401 — side-effect registers SlackSyncWorker
 from app.sync.slack_sync import slack_sync_loop
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
     # Background sync loops — each indexes connector data into connector_index
     if settings.notion_poll_enabled:
         bg_tasks.append(asyncio.create_task(notion_poll_loop_v2(60)))
+    bg_tasks.append(asyncio.create_task(gmail_poll_loop_v2(60)))
     bg_tasks.append(asyncio.create_task(slack_poll_loop_v2(60)))
     bg_tasks.append(asyncio.create_task(slack_sync_loop(3600)))     # hourly
     bg_tasks.append(asyncio.create_task(gdrive_sync_loop(3600)))    # hourly

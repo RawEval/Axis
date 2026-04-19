@@ -12,6 +12,7 @@ Docs: https://developers.google.com/gmail/api/reference/rest/v1/users.messages
 from __future__ import annotations
 
 import base64
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -64,6 +65,28 @@ class GmailClient:
             except Exception:  # noqa: BLE001
                 continue
         return results
+
+    async def list_recent(
+        self,
+        *,
+        since: datetime | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Return hydrated Gmail messages received in the time window.
+
+        Uses Gmail search syntax (`after:UNIX_TIMESTAMP`). For default
+        ('today / past day') we pass `newer_than:1d` which Gmail accepts.
+        Each message dict has the standard Gmail v1 shape — `id`,
+        `internalDate`, `snippet`, `payload.headers`.
+
+        Phase 2 will replace this with `users.history.list` for true delta
+        sync via webhook. For Phase 1 this is good enough.
+        """
+        if since is not None:
+            query = f"after:{int(since.timestamp())}"
+        else:
+            query = "newer_than:1d"
+        return await self.search(query, limit=limit)
 
     async def send_message(self, *, to: str, subject: str, body: str) -> dict[str, Any]:
         """messages.send — ALWAYS gated upstream. Here we just do the send.
