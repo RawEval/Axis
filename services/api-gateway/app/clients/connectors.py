@@ -33,3 +33,21 @@ class ConnectorManagerClient:
             params={"code": code, "state": state},
             headers=self._headers,
         )
+
+    async def sync_state(self, *, user_id: str) -> dict[str, Any]:
+        return await forward(
+            self._http,
+            "GET",
+            f"{self._base}/connectors/sync-state",
+            params={"user_id": user_id},
+            headers=self._headers,
+        )
+
+    async def freshen(self, *, source: str, user_id: str, force: bool = True) -> dict[str, Any]:
+        return await forward(
+            self._http,
+            "POST",
+            f"{self._base}/tools/{source}/freshen",
+            json={"user_id": user_id, "force": force},
+            headers=self._headers,
+        )

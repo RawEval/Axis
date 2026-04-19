@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.clients.base import propagate_headers
 from app.clients.connectors import ConnectorManagerClient
@@ -85,3 +85,30 @@ async def disconnect(
             tool,
         )
     return {"tool": tool, "status": "revoked"}
+
+
+@router.get("/sync-state")
+async def get_sync_state(
+    user_id: CurrentUser,
+    req: Request,
+) -> dict[str, Any]:
+    client = ConnectorManagerClient(
+        get_http_client(req),
+        headers=propagate_headers(req),
+    )
+    return await client.sync_state(user_id=user_id)
+
+
+@router.post("/{source}/freshen")
+async def freshen_connector(
+    source: str,
+    user_id: CurrentUser,
+    req: Request,
+) -> dict[str, Any]:
+    if source not in PHASE_1_TOOLS:
+        raise HTTPException(404, f"unknown source '{source}'")
+    client = ConnectorManagerClient(
+        get_http_client(req),
+        headers=propagate_headers(req),
+    )
+    return await client.freshen(source=source, user_id=user_id, force=True)
