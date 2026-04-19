@@ -93,6 +93,7 @@ async def poll_all_notion_workspaces() -> dict[str, int]:
                 source="notion",
                 event_type=mapped["event_type"],
                 key=mapped["key"],
+                external_id=mapped["key"],
                 title=mapped["title"],
                 snippet=mapped.get("snippet"),
                 actor=mapped.get("actor"),

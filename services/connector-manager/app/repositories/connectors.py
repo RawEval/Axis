@@ -169,6 +169,20 @@ class ConnectorsRepository:
             )
         return [dict(r) for r in rows]
 
+    async def list_by_user_and_tool(self, *, user_id: str, tool: str) -> list[dict[str, Any]]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, user_id, project_id, tool_name AS tool,
+                       auth_token_encrypted, status, last_sync,
+                       workspace_id, workspace_name
+                FROM connectors
+                WHERE user_id = $1::uuid AND tool_name = $2 AND status = 'connected'
+                """,
+                user_id, tool,
+            )
+            return [dict(r) for r in rows]
+
     async def touch_last_sync(self, connector_id: str) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(

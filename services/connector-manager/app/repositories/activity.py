@@ -5,10 +5,11 @@ webhook, Drive push) feeds rows into ``activity_events`` via this class.
 The proactive-monitor and the agent's ``activity.query`` capability both
 read from the same table.
 
-Dedup: we key on ``(user_id, source, raw_ref->>'key')`` so a re-delivery of
-the same webhook message is a no-op. The ``key`` must be stable across
-retries — Slack uses ``channel:ts``, Notion uses the page id, Gmail uses
-the message id, GitHub uses the event delivery GUID.
+Dedup: keyed on the unique constraint ``(user_id, source, external_id)``
+(migration 016). ``external_id`` must be stable across retries — Slack uses
+``channel:ts``, Notion uses the page id, Gmail uses the message id, GitHub
+uses the event delivery GUID. ``raw_ref`` also carries ``key`` for backward
+read compat until Phase 2 audits remaining readers.
 """
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ class ActivityEventsRepository:
         source: str,
         event_type: str,
         key: str,
+        external_id: str,
         title: str,
         snippet: str | None = None,
         actor: str | None = None,
@@ -38,7 +40,7 @@ class ActivityEventsRepository:
         occurred_at: datetime | None = None,
         raw_ref: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Insert or no-op if a row with the same (user, source, key) exists.
+        """Insert or no-op if a row with the same (user, source, external_id) exists.
 
         Returns ``{id, inserted: bool}``. ``inserted`` is False on dedup.
         """
@@ -50,14 +52,9 @@ class ActivityEventsRepository:
                 """
                 INSERT INTO activity_events
                     (user_id, project_id, source, event_type, actor, actor_id,
-                     title, snippet, raw_ref, occurred_at)
-                SELECT $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9::jsonb, $10
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM activity_events
-                    WHERE user_id = $1::uuid
-                      AND source = $3
-                      AND raw_ref->>'key' = $11
-                )
+                     title, snippet, raw_ref, occurred_at, external_id)
+                VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)
+                ON CONFLICT (user_id, source, external_id) DO NOTHING
                 RETURNING id
                 """,
                 user_id,
@@ -70,7 +67,7 @@ class ActivityEventsRepository:
                 snippet,
                 json.dumps(merged_ref),
                 when,
-                key,
+                external_id,
             )
         if row is None:
             return {"id": None, "inserted": False}
