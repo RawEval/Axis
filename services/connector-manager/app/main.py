@@ -20,6 +20,7 @@ from app.db import db
 from app.routes import oauth, oauth_apps, tools, webhooks
 from app.sync.gdrive import gdrive_poll_loop_v2  # noqa: F401 — side-effect registers GDriveSyncWorker
 from app.sync.gdrive_sync import gdrive_sync_loop
+from app.sync.github import github_poll_loop_v2  # noqa: F401 — side-effect registers GitHubSyncWorker
 from app.sync.gmail import gmail_poll_loop_v2  # noqa: F401 — side-effect registers GmailSyncWorker
 from app.sync.notion import notion_poll_loop_v2
 from app.sync.slack import slack_poll_loop_v2  # noqa: F401 — side-effect registers SlackSyncWorker
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI):
     bg_tasks.append(asyncio.create_task(slack_sync_loop(3600)))     # hourly
     bg_tasks.append(asyncio.create_task(gdrive_poll_loop_v2(60)))
     bg_tasks.append(asyncio.create_task(gdrive_sync_loop(3600)))    # hourly
+    bg_tasks.append(asyncio.create_task(github_poll_loop_v2(60)))
 
     try:
         yield

@@ -8,6 +8,7 @@ Docs: https://docs.github.com/en/rest
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -97,3 +98,49 @@ class GitHubClient:
             )
             resp.raise_for_status()
             return resp.json()
+
+    async def list_recent(
+        self,
+        *,
+        since: "datetime | None" = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Return public events for the authenticated user, optionally
+        filtered by `since`. Stops scanning once it hits an event older than
+        `since` (events are sorted newest-first by GitHub).
+
+        Phase 2 will replace this with webhooks (per-repo or per-org). For
+        Phase 1 the user's events feed is sufficient.
+        """
+        # Step 1: get the authenticated user's login (for the events URL).
+        me = await self.authenticated_user()
+        login = me.get("login")
+        if not login:
+            return []
+
+        # Step 2: fetch one page of events (most recent first).
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                f"{GITHUB_API_BASE}/users/{login}/events",
+                headers=self._headers,
+                params={"per_page": min(100, limit)},
+            )
+            resp.raise_for_status()
+            events: list[dict[str, Any]] = resp.json()
+
+        if since is None:
+            return events[:limit]
+
+        # Filter client-side; stop early on the first event older than `since`.
+        kept: list[dict[str, Any]] = []
+        for e in events:
+            try:
+                ts = datetime.fromisoformat(e["created_at"].replace("Z", "+00:00"))
+            except (ValueError, TypeError, KeyError):
+                continue
+            if ts < since:
+                break
+            kept.append(e)
+            if len(kept) >= limit:
+                break
+        return kept
