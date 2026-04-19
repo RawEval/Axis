@@ -1,9 +1,9 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Button, Card, Skeleton } from '@axis/design-system';
+import { Badge, Button, Card, ConnectorFreshnessChip, RefreshButton, Skeleton } from '@axis/design-system';
 import { PageHeader } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { rightPanel } from '@/lib/right-panel';
@@ -12,10 +12,13 @@ import {
   IMPLEMENTED_TOOLS,
   type ConnectorTile,
   type OAuthPopupMessage,
+  type SyncStateItem,
   type Tool,
   useConnectTool,
   useConnectors,
   useDisconnectTool,
+  useFreshen,
+  useSyncState,
 } from '@/lib/queries/connectors';
 
 type Banner = { tone: 'success' | 'danger'; message: string } | null;
@@ -34,6 +37,11 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
   const connect = useConnectTool();
   const disconnect = useDisconnectTool();
   const params = useSearchParams();
+  const { data: syncStateData } = useSyncState();
+  const stateBySource: Record<string, SyncStateItem> = {};
+  for (const item of syncStateData?.items ?? []) {
+    stateBySource[item.source] = item;
+  }
   const [banner, setBanner] = useState<Banner>(null);
   const isPopup = useRef(false);
 
@@ -147,6 +155,7 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
                 onConnect={() => onConnect(t.tool)}
                 onDisconnect={() => disconnect.mutate(t.tool)}
                 pending={connect.isPending}
+                syncState={stateBySource[t.tool]}
               />
             );
           })}
@@ -161,6 +170,25 @@ export default function ConnectionsContent({ tools }: { tools: ToolMeta[] }) {
   );
 }
 
+function FreshnessRow({ tool, state }: { tool: Tool; state: SyncStateItem }) {
+  const router = useRouter();
+  const freshen = useFreshen(tool);
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <ConnectorFreshnessChip
+        source={tool}
+        state={state}
+        onReconnect={() => router.push(`/connections?reconnect=${tool}`)}
+      />
+      <RefreshButton
+        source={tool}
+        onRefresh={() => freshen.mutateAsync()}
+        isPending={freshen.isPending}
+      />
+    </div>
+  );
+}
+
 function ToolCard({
   tool,
   tile,
@@ -169,6 +197,7 @@ function ToolCard({
   onConnect,
   onDisconnect,
   pending,
+  syncState,
 }: {
   tool: ToolMeta;
   tile: ConnectorTile | undefined;
@@ -177,6 +206,7 @@ function ToolCard({
   onConnect: () => void;
   onDisconnect: () => void;
   pending: boolean;
+  syncState: SyncStateItem | undefined;
 }) {
   return (
     <Card className="hover:border-edge-strong transition-colors p-5 group relative flex flex-col">
@@ -209,6 +239,10 @@ function ToolCard({
             </div>
           )}
         </div>
+      )}
+
+      {syncState && (
+        <FreshnessRow tool={tool.tool} state={syncState} />
       )}
 
       <div className="mt-auto pt-2">

@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { ConnectionsStatusDot } from './connections-status-dot';
 
 interface NavItem {
   href: string;
@@ -58,6 +59,7 @@ export function LeftNav() {
   const renderItem = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.href);
+    const isConnections = item.href === '/connections';
     return (
       <Link
         key={item.href}
@@ -71,7 +73,8 @@ export function LeftNav() {
         title={collapsed ? item.label : undefined}
       >
         <Icon size={18} aria-hidden="true" className="shrink-0" />
-        {!collapsed && <span className="truncate">{item.label}</span>}
+        {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+        {isConnections && <ConnectionsStatusDot />}
       </Link>
     );
   };
