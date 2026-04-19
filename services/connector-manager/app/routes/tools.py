@@ -11,8 +11,10 @@ those into Citation objects in its capability layer.
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from axis_common import get_logger
 from fastapi import APIRouter, HTTPException
@@ -20,7 +22,10 @@ from pydantic import BaseModel, Field
 
 from app.db import db
 from app.repositories.connectors import ConnectorsRepository
+from app.repositories.sync_state import ConnectorSyncStateRepository
 from app.security import decrypt_token
+from app.sync import registry as sync_registry
+from app.sync.base import SyncResult
 
 # The connectors package lives at /<repo>/connectors/notion/src/client.py.
 # Add it to sys.path so we can import it cleanly from this service.
@@ -992,3 +997,69 @@ def _normalize_notion_hit(hit: dict[str, Any]) -> NotionSearchResult:
         author=author,
         last_edited_time=last_edited,
     )
+
+
+# ============================================================================
+# Freshness — /tools/<source>/freshen + /connectors/sync-state
+# (Phase 1 connector real-time rewrite — see docs/superpowers/specs/2026-04-19-...)
+# ============================================================================
+
+
+class FreshenRequest(BaseModel):
+    user_id: UUID
+    force: bool = False
+    since: datetime | None = None
+
+
+class FreshenResponse(BaseModel):
+    status: str
+    last_synced_at: datetime | None = None
+    rows_added: int = 0
+    error: str | None = None
+
+
+@router.post("/tools/{source}/freshen", response_model=FreshenResponse)
+async def freshen(source: str, body: FreshenRequest) -> FreshenResponse:
+    worker = sync_registry.get(source)
+    if worker is None:
+        raise HTTPException(404, f"no sync worker registered for source '{source}'")
+
+    repo = ConnectorSyncStateRepository(db.raw)
+    if not body.force:
+        state = await repo.get(body.user_id, source)
+        if state and state.get("last_status") == "ok" and state.get("last_synced_at"):
+            age = datetime.now(timezone.utc) - state["last_synced_at"]
+            if age < timedelta(seconds=60):
+                return FreshenResponse(
+                    status="ok",
+                    last_synced_at=state["last_synced_at"],
+                    rows_added=0,
+                )
+
+    result: SyncResult = await worker.freshen(body.user_id, since=body.since, force=body.force)
+    state = await repo.get(body.user_id, source)
+    return FreshenResponse(
+        status=result.status,
+        last_synced_at=state["last_synced_at"] if state else None,
+        rows_added=result.rows_added,
+        error=result.error_message,
+    )
+
+
+class SyncStateItem(BaseModel):
+    source: str
+    last_synced_at: datetime | None
+    last_status: str
+    last_error: str | None
+    last_event_at: datetime | None
+
+
+class SyncStateResponse(BaseModel):
+    items: list[SyncStateItem]
+
+
+@router.get("/connectors/sync-state", response_model=SyncStateResponse)
+async def sync_state(user_id: UUID) -> SyncStateResponse:
+    repo = ConnectorSyncStateRepository(db.raw)
+    rows = await repo.list_for_user(user_id)
+    return SyncStateResponse(items=[SyncStateItem(**r) for r in rows])
