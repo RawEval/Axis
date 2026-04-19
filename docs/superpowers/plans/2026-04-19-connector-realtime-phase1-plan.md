@@ -61,21 +61,18 @@ CREATE TABLE IF NOT EXISTS connector_sync_state (
 CREATE INDEX IF NOT EXISTS connector_sync_state_status_not_ok_idx
   ON connector_sync_state (last_status)
   WHERE last_status != 'ok';
-
-ALTER TABLE connector_sync_state ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY connector_sync_state_user_isolation ON connector_sync_state
-  FOR ALL USING (user_id = current_setting('app.current_user_id', true)::uuid);
 ```
+
+**No RLS on this table** — matches the documented Phase 1 decision in `003_rls.sql` ("Disable RLS and rely on application-level isolation; re-enable in Phase 2 when on Supabase"). Per-user isolation is enforced by the repository layer in Task 0.6.
 
 - [ ] **Step 2: Apply locally and verify**
 
-Run:
+Run (do NOT use `make infra-down/up` — it wipes the dev DB):
 ```bash
-make infra-down && make infra-up
-psql -h localhost -U axis -d axis -c "\d connector_sync_state"
+PGPASSWORD=axis psql -h localhost -U axis -d axis -f infra/docker/init/postgres/015_connector_sync_state.sql
+PGPASSWORD=axis psql -h localhost -U axis -d axis -c "\d connector_sync_state"
 ```
-Expected output: table exists, 7 columns, primary key on `(user_id, source)`, RLS enabled.
+Expected output: table exists, 9 columns, primary key on `(user_id, source)`, partial index `connector_sync_state_status_not_ok_idx` listed. RLS should be **disabled** (matches `003_rls.sql`).
 
 - [ ] **Step 3: Commit**
 

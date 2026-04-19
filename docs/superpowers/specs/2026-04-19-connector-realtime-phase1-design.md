@@ -139,7 +139,7 @@ Because the manual "Refresh" button in the UI is also a `freshen` call. Same cod
 ```sql
 CREATE TABLE connector_sync_state (
   user_id           UUID NOT NULL,
-  source            TEXT NOT NULL,  -- 'slack'|'notion'|'gmail'|'gdrive'|'github'|'linear'
+  source            TEXT NOT NULL,  -- 'slack'|'notion'|'gmail'|'gdrive'|'github'
   last_synced_at    TIMESTAMPTZ,
   last_status       TEXT NOT NULL DEFAULT 'never',  -- 'ok'|'auth_failed'|'vendor_error'|'network_error'|'never'
   last_error        TEXT,
@@ -156,6 +156,8 @@ CREATE INDEX connector_sync_state_status_idx
 Migration file: `infra/docker/init/postgres/0NN_connector_sync_state.sql` (next available number).
 
 This is the single source of truth for "is data fresh?" The freshness chip, the on-query freshen mixin, and the cron scheduler all read it.
+
+**No RLS on this table** — matches the documented Phase 1 decision in `infra/docker/init/postgres/003_rls.sql` ("Disable RLS and rely on application-level isolation; re-enable in Phase 2 when on Supabase"). Per-user isolation is enforced by the repository layer (every query includes `WHERE user_id = $1`).
 
 ### 6.2 `activity_events` — additive change only
 

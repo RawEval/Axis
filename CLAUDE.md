@@ -84,7 +84,7 @@ The Next.js web app runs on **3001** (not 3000) because another Next.js server a
 
 1. **Every write action requires user confirmation.** Non-negotiable in Phase 1. Spec §6.2. Exception: trust-level-high users can auto-confirm low-risk writes (Notion append, GitHub comment). Sends are *always* gated.
 2. **All OAuth tokens encrypted at rest (AES-256).** Never log them. Decrypt only in memory during connector calls. Spec §10.
-3. **Per-user data isolation at the DB level.** Row-level security on every Postgres table. Per-user Qdrant namespaces. Zero cross-user data leakage by architecture.
+3. **Per-user data isolation, enforced at the application layer in Phase 1.** Every repository query in `services/*/app/repositories/*` includes `WHERE user_id = $1` — see `infra/docker/init/postgres/003_rls.sql` for the documented Phase 1 decision (RLS is *disabled* locally because we are not on Supabase yet; enabling it without the right role setup silently returns zero rows). Per-user Qdrant namespaces are already in place. RLS becomes the enforcement mechanism in Phase 2 when we move to Supabase. Until then: do not enable RLS on new tables — match the pattern in `003_rls.sql` and rely on the repository layer.
 4. **Eval layer runs on every agent action.** Haiku-as-judge scoring. Spec §6.6 — "the core moat." Never skip it for performance.
 5. **Trust is earned.** Progressive unlock for write autonomy. Low trust = confirm everything. High trust earned over weeks.
 6. **Correction signals are gold.** Every dismiss/correct feeds the long-loop fine-tuning dataset. Never discard them.
