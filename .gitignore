@@ -86,3 +86,6 @@ data/
 .DS_Store?
 tmp/
 temp/
+
+# Local worktrees (created by Claude/superpowers — never committed)
+.worktrees/
