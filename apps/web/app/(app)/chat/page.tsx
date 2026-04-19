@@ -3,11 +3,11 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ConnectorFreshnessChip,
   PromptInput,
   WritePreviewCard,
   type TargetCandidate,
 } from '@axis/design-system';
+import { ConnectorFreshnessChip } from '@axis/design-system/src/components/connector-freshness-chip';
 import { Button } from '@/components/ui';
 import { CitedResponse, type Citation } from '@/components/chat/cited-response';
 import { LiveTaskTree } from '@/components/chat/live-task-tree';
