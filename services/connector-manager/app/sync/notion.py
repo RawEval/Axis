@@ -146,3 +146,29 @@ def _map_notion_page(page: dict[str, Any]) -> dict[str, Any] | None:
 
 
 sync_registry.register(NotionSyncWorker())
+
+
+async def notion_poll_loop_v2(interval_sec: int = 60) -> None:
+    """Temporary cron loop — Phase 3 (adaptive scheduler) replaces this.
+
+    For each connected Notion user, run NotionSyncWorker.freshen(). Errors
+    are caught per-user so one bad token doesn't kill the loop. The worker
+    itself records auth_failed / vendor_error / network_error into
+    connector_sync_state — there's nothing we need to log differently here.
+    """
+    import asyncio
+
+    logger.info("notion_poll_loop_v2_started", interval_sec=interval_sec)
+    worker = NotionSyncWorker()
+    while True:
+        try:
+            conn_repo = ConnectorsRepository(db.raw)
+            user_ids = {str(r["user_id"]) for r in await conn_repo.list_connected(tool="notion")}
+            for uid in user_ids:
+                try:
+                    await worker.freshen(UUID(uid))
+                except Exception as e:  # noqa: BLE001
+                    logger.error("notion_freshen_crashed", user_id=uid, error=str(e))
+        except Exception as e:  # noqa: BLE001
+            logger.error("notion_poll_v2_tick_crashed", error=str(e))
+        await asyncio.sleep(interval_sec)
