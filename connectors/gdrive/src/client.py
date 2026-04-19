@@ -14,6 +14,7 @@ Docs: https://developers.google.com/drive/api/v3/reference
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -87,6 +88,44 @@ class GDriveClient:
             if not page_token or not files:
                 break
         return all_files[:max_files]
+
+    async def list_recent(
+        self,
+        *,
+        since: "datetime | None" = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Return files modified in the time window, newest first.
+
+        Uses Drive's `files.list` with a `modifiedTime` filter and ordering.
+        Each result includes `id`, `name`, `mimeType`, `modifiedTime`,
+        `webViewLink`, and `lastModifyingUser` (with `emailAddress`).
+
+        Phase 2 will replace this with `changes.list` for true delta sync
+        via Drive push notifications. For Phase 1 this is sufficient.
+        """
+        params: dict[str, Any] = {
+            "pageSize": min(100, limit),
+            "fields": (
+                "files(id,name,mimeType,modifiedTime,webViewLink,"
+                "lastModifyingUser(emailAddress,displayName))"
+            ),
+            "orderBy": "modifiedTime desc",
+        }
+        if since is not None:
+            iso = since.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+            params["q"] = f"modifiedTime > '{iso}' and trashed = false"
+        else:
+            params["q"] = "trashed = false"
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                f"{DRIVE_API_BASE}/files",
+                headers=self._headers,
+                params=params,
+            )
+            resp.raise_for_status()
+            return resp.json().get("files", [])
 
     async def get_file(self, file_id: str) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=15.0) as client:

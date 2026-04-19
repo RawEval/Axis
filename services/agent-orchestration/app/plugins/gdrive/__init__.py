@@ -1,5 +1,5 @@
-"""Google Drive plugin — search, read content, create doc."""
+"""Google Drive plugin — search, read content, create doc, recent activity."""
 from app.capabilities.gdrive import CAPABILITIES
+from app.capabilities.gdrive_recent_activity import CAPABILITY as _recent_activity
 
-# Re-export for the plugin registry
-CAPABILITIES = CAPABILITIES
+CAPABILITIES = [*CAPABILITIES, _recent_activity]
