@@ -1,16 +1,19 @@
 """activity.query — query the user's cross-tool activity firehose.
 
-Spec §6.3 / ADR 007. Today activity_events is empty because no ingestion
-worker populates it — the capability still works (returns []) and is ready
-for Session 4 when ingestion ships.
+Spec §6.3 / ADR 007. Reads from activity_events, filtering by a user-local
+'today' window resolved via app.util.since.resolve_since.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from app.capabilities.base import Capability, CapabilityResult, Citation
+from app.capabilities.base import CapabilityResult, Citation
 from app.db import db
+from app.repositories.users import UsersRepository
+from app.util.since import resolve_since
 
 
 @dataclass
@@ -70,34 +73,33 @@ class _ActivityQuery:
         limit = int(inputs.get("limit", 50))
         source = inputs.get("source", "all")
         keyword = inputs.get("keyword")
-        interval = _parse_since(inputs.get("since", "today"))
 
-        async with db.acquire() as conn:
-            # asyncpg encodes intervals as timedelta, not str, so we inline
-            # the whitelisted interval literal instead of binding it.
-            base_sql = f"""
+        users_repo = UsersRepository(db.raw)
+        tz_name = await users_repo.get_timezone(UUID(user_id))
+        start_ts = resolve_since(inputs.get("since", "today"), ZoneInfo(tz_name))
+
+        async with db.raw.acquire() as conn:
+            sql = """
                 SELECT id, source, event_type, title, snippet, actor, occurred_at, raw_ref
                 FROM activity_events
-                WHERE user_id = $1::uuid
-                  AND occurred_at >= NOW() - INTERVAL '{interval}'
+                WHERE user_id = $1::uuid AND occurred_at >= $2
             """
-            args: list[Any] = [user_id]
+            args: list[Any] = [user_id, start_ts]
             if project_id:
-                base_sql += f" AND project_id = ${len(args) + 1}::uuid"
+                sql += f" AND project_id = ${len(args) + 1}::uuid"
                 args.append(project_id)
             if source and source != "all":
-                base_sql += f" AND source = ${len(args) + 1}"
+                sql += f" AND source = ${len(args) + 1}"
                 args.append(source)
             if keyword:
-                base_sql += (
+                sql += (
                     f" AND to_tsvector('english', title || ' ' || COALESCE(snippet, '')) "
                     f"@@ plainto_tsquery('english', ${len(args) + 1})"
                 )
                 args.append(keyword)
-            base_sql += f" ORDER BY occurred_at DESC LIMIT ${len(args) + 1}"
+            sql += f" ORDER BY occurred_at DESC LIMIT ${len(args) + 1}"
             args.append(limit)
-
-            rows = await conn.fetch(base_sql, *args)
+            rows = await conn.fetch(sql, *args)
 
         events = [dict(r) for r in rows]
         citations = [
@@ -117,32 +119,6 @@ class _ActivityQuery:
             content=events,
             citations=citations,
         )
-
-
-_INTERVAL_MAP = {
-    "last hour": "1 hour",
-    "1h": "1 hour",
-    "1 hour": "1 hour",
-    "today": "1 day",
-    "24h": "1 day",
-    "1d": "1 day",
-    "1 day": "1 day",
-    "this week": "7 days",
-    "7d": "7 days",
-    "1 week": "7 days",
-    "this month": "30 days",
-    "30d": "30 days",
-    "1 month": "30 days",
-}
-
-
-def _parse_since(s: str) -> str:
-    """Map a natural phrase to a whitelisted Postgres INTERVAL literal.
-
-    Only values in ``_INTERVAL_MAP`` are ever returned — this is inlined into
-    the SQL below so it must stay untrusted-input-free.
-    """
-    return _INTERVAL_MAP.get((s or "").strip().lower(), "1 day")
 
 
 CAPABILITY = _ActivityQuery()
