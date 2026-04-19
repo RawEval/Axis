@@ -1,6 +1,9 @@
 -- 015_connector_sync_state.sql
 -- Single source of truth for "is data fresh?" per (user, source).
 -- Read by the freshness chip, the FreshenBeforeRead mixin, and the cron scheduler.
+-- No RLS — matches the Phase 1 decision in 003_rls.sql. Isolation is enforced
+-- at the repository layer (every query has `WHERE user_id = $1`). RLS becomes
+-- the enforcement mechanism in Phase 2 when we move to Supabase.
 
 CREATE TABLE IF NOT EXISTS connector_sync_state (
   user_id            UUID        NOT NULL,
@@ -19,8 +22,3 @@ CREATE TABLE IF NOT EXISTS connector_sync_state (
 CREATE INDEX IF NOT EXISTS connector_sync_state_status_not_ok_idx
   ON connector_sync_state (last_status)
   WHERE last_status != 'ok';
-
-ALTER TABLE connector_sync_state ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY connector_sync_state_user_isolation ON connector_sync_state
-  FOR ALL USING (user_id = current_setting('app.current_user_id', true)::uuid);
