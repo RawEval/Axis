@@ -130,3 +130,58 @@ export function useDisconnectTool() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['connectors'] }),
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// Phase 4 — freshness hooks (sync-state + freshen)
+// Backend contract: api-gateway routes added in Phase 0 Task 0.13.
+// ────────────────────────────────────────────────────────────────────────
+
+export type SyncStatus =
+  | 'never'
+  | 'ok'
+  | 'auth_failed'
+  | 'vendor_error'
+  | 'network_error';
+
+export type SyncStateItem = {
+  source: Tool;
+  last_synced_at: string | null;
+  last_status: SyncStatus;
+  last_error: string | null;
+  last_event_at: string | null;
+};
+
+export type SyncStateResponse = { items: SyncStateItem[] };
+
+export type FreshenResponse = {
+  status: SyncStatus;
+  last_synced_at: string | null;
+  rows_added: number;
+  error?: string | null;
+};
+
+/**
+ * Polled list of sync-state per (user, source). Refetches every 10s so
+ * the chip stays honest without manual refresh.
+ */
+export function useSyncState() {
+  return useQuery<SyncStateResponse>({
+    queryKey: ['connectors', 'sync-state'],
+    queryFn: () => api.get<SyncStateResponse>('/connectors/sync-state'),
+    refetchInterval: 10_000,
+  });
+}
+
+/**
+ * Manual refresh button → POST /connectors/<source>/freshen with empty body.
+ * Invalidates the sync-state query on success so the chip re-renders.
+ */
+export function useFreshen(source: Tool) {
+  const qc = useQueryClient();
+  return useMutation<FreshenResponse, ApiError, void>({
+    mutationFn: () => api.post<FreshenResponse>(`/connectors/${source}/freshen`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['connectors', 'sync-state'] });
+    },
+  });
+}

@@ -76,3 +76,13 @@ export {
   type TargetPickerProps,
   type TargetCandidate,
 } from './components/target-picker';
+
+// Phase 4 — connector freshness.
+export {
+  ConnectorFreshnessChip,
+  type ConnectorFreshnessChipProps,
+} from './components/connector-freshness-chip';
+export {
+  RefreshButton,
+  type RefreshButtonProps,
+} from './components/refresh-button';
