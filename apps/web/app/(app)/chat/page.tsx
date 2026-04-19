@@ -43,7 +43,7 @@ type RunResult = {
   citations?: Citation[];
   tokens_used?: number;
   latency_ms?: number;
-  freshness?: ResponseFreshness | null;
+  freshness_by_source?: Record<string, ResponseFreshness>;
 };
 
 const SUGGESTED_PROMPTS: ReadonlyArray<string> = [
@@ -162,7 +162,6 @@ function ChatPageContent() {
     void runPrompt(text);
   };
 
-  const router = useRouter();
   const citationCount = lastResult?.citations?.length ?? 0;
   const isEmpty = !lastResult && !run.isPending && events.length === 0;
 
@@ -250,11 +249,8 @@ function ChatPageContent() {
                     ) : (
                       <div className="text-sm text-ink-tertiary">(empty response)</div>
                     )}
-                    {lastResult.freshness && (
-                      <FreshnessFooter
-                        freshness={lastResult.freshness}
-                        onReconnect={(source) => router.push(`/connections?reconnect=${source}`)}
-                      />
+                    {lastResult?.freshness_by_source && Object.keys(lastResult.freshness_by_source).length > 0 && (
+                      <FreshnessFooter freshnessBySource={lastResult.freshness_by_source} />
                     )}
                   </div>
 
@@ -353,37 +349,41 @@ function ChatPageContent() {
 }
 
 function FreshnessFooter({
-  freshness,
-  onReconnect,
+  freshnessBySource,
 }: {
-  freshness: ResponseFreshness;
-  onReconnect: (source: string) => void;
+  freshnessBySource: Record<string, ResponseFreshness>;
 }) {
+  const router = useRouter();
+  const entries = Object.values(freshnessBySource);
   return (
-    <div className="mt-3 flex items-center gap-2 text-xs text-ink-tertiary border-t border-edge-subtle pt-3">
-      <span className="capitalize">{freshness.source}</span>
-      <span aria-hidden>·</span>
-      <ConnectorFreshnessChip
-        source={freshness.source}
-        state={{
-          source: freshness.source,
-          last_synced_at: freshness.last_synced_at,
-          last_status: freshness.sync_status as
-            | 'never'
-            | 'ok'
-            | 'auth_failed'
-            | 'vendor_error'
-            | 'network_error',
-          last_error: freshness.error_message,
-        }}
-        onReconnect={() => onReconnect(freshness.source)}
-        data-testid="freshness-chip"
-      />
-      {freshness.sync_status === 'auth_failed' && (
-        <span className="ml-2 text-red-700 dark:text-red-300">
-          {freshness.source} sync failed — reconnect to refresh.
-        </span>
-      )}
+    <div className="mt-3 space-y-1 border-t border-edge-subtle pt-3">
+      {entries.map((freshness) => (
+        <div key={freshness.source} className="flex items-center gap-2 text-xs text-ink-tertiary">
+          <span className="capitalize">{freshness.source}</span>
+          <span aria-hidden>·</span>
+          <ConnectorFreshnessChip
+            source={freshness.source}
+            state={{
+              source: freshness.source,
+              last_synced_at: freshness.last_synced_at,
+              last_status: freshness.sync_status as
+                | 'never'
+                | 'ok'
+                | 'auth_failed'
+                | 'vendor_error'
+                | 'network_error',
+              last_error: freshness.error_message,
+            }}
+            onReconnect={() => router.push(`/connections?reconnect=${freshness.source}`)}
+            data-testid={`freshness-chip-${freshness.source}`}
+          />
+          {freshness.sync_status === 'auth_failed' && (
+            <span className="ml-2 text-red-700 dark:text-red-300">
+              {freshness.source} sync failed — reconnect to refresh.
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

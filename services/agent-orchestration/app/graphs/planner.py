@@ -51,6 +51,7 @@ class AgentState(TypedDict, total=False):
     plan: list[dict[str, Any]]
     output: str
     citations: list[dict[str, Any]]
+    freshness_by_source: dict[str, dict[str, Any]]
     tokens_used: int
     model: str
     error: str
@@ -115,6 +116,7 @@ async def supervise(state: AgentState) -> AgentState:
     ]
     plan: list[dict[str, Any]] = []
     all_citations: list[dict[str, Any]] = []
+    freshness_by_source: dict[str, dict[str, Any]] = {}
     total_tokens = 0
 
     await publish_event(
@@ -205,6 +207,7 @@ async def supervise(state: AgentState) -> AgentState:
                 "output": output,
                 "citations": all_citations,
                 "plan": plan,
+                "freshness_by_source": freshness_by_source,
                 "tokens_used": total_tokens,
                 "model": settings.anthropic_model_sonnet,
             }
@@ -261,6 +264,11 @@ async def supervise(state: AgentState) -> AgentState:
 
             await publish_event(user_id=user_id, project_id=active_project_id, event_type="step.completed", payload={"step": iteration + 1, "name": cap.name, "status": "error" if result.is_error else "done", "summary": result.summary, "citations": len(result.citations)})
 
+            if isinstance(result.content, dict):
+                fr = result.content.get("freshness")
+                if isinstance(fr, dict) and isinstance(fr.get("source"), str):
+                    freshness_by_source[fr["source"]] = fr
+
             all_citations.extend(c.to_dict() for c in result.citations)
             plan.append({"step": iteration + 1, "kind": "tool_use", "name": block.name, "status": "error" if result.is_error else "done", "summary": result.summary})
             return {
@@ -285,6 +293,7 @@ async def supervise(state: AgentState) -> AgentState:
         "output": "I ran out of iterations before finishing. Try a narrower question.",
         "citations": all_citations,
         "plan": plan,
+        "freshness_by_source": freshness_by_source,
         "tokens_used": total_tokens,
         "model": settings.anthropic_model_sonnet,
     }
@@ -304,6 +313,7 @@ async def _stub_supervise(state: AgentState, registry) -> AgentState:
 
     plan: list[dict[str, Any]] = []
     citations: list[dict[str, Any]] = []
+    freshness_by_source: dict[str, dict[str, Any]] = {}
 
     activity_cap = registry.get("activity.query")
     if activity_cap is not None:
@@ -314,6 +324,10 @@ async def _stub_supervise(state: AgentState, registry) -> AgentState:
                 org_id=None,
                 inputs={"since": "today", "source": "all", "limit": 20},
             )
+            if isinstance(result.content, dict):
+                fr = result.content.get("freshness")
+                if isinstance(fr, dict) and isinstance(fr.get("source"), str):
+                    freshness_by_source[fr["source"]] = fr
             citations.extend(c.to_dict() for c in result.citations)
             plan.append(
                 {
@@ -357,6 +371,7 @@ async def _stub_supervise(state: AgentState, registry) -> AgentState:
         "output": output,
         "citations": citations,
         "plan": plan,
+        "freshness_by_source": freshness_by_source,
         "tokens_used": 0,
         "model": "stub",
     }

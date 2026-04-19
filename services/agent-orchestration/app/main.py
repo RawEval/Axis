@@ -107,6 +107,13 @@ class CitationPayload(BaseModel):
     spans: list[dict[str, Any]] = []
 
 
+class FreshnessPayload(BaseModel):
+    source: str
+    last_synced_at: str | None = None
+    sync_status: str = "never"
+    error_message: str | None = None
+
+
 class RunResponse(BaseModel):
     action_id: str
     task_id: str
@@ -117,6 +124,7 @@ class RunResponse(BaseModel):
     output: str
     plan: list[dict]
     citations: list[CitationPayload]
+    freshness_by_source: dict[str, FreshnessPayload] = {}
     tokens_used: int
     latency_ms: int
 
@@ -575,6 +583,10 @@ async def _persist_and_respond(req: RunRequest, state: dict[str, Any], start: fl
         output=output,
         plan=plan,
         citations=[CitationPayload(**c) for c in turn["citations"]],
+        freshness_by_source={
+            src: FreshnessPayload(**fr)
+            for src, fr in (state.get("freshness_by_source") or {}).items()
+        },
         tokens_used=tokens_used,
         latency_ms=latency_ms,
     )
