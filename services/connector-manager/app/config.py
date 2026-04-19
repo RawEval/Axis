@@ -12,8 +12,7 @@ class Settings(AxisBaseSettings):
     token_encryption_key: str = "change-me-32-bytes-base64"
 
     # Background ingestion
-    notion_poll_interval_sec: int = 900  # 15 minutes
-    notion_poll_enabled: bool = True
+    connector_sync_enabled: bool = True
 
     # Notion
     notion_client_id: str = ""

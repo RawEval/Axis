@@ -142,27 +142,3 @@ def _map_gmail_message(message: dict[str, Any]) -> dict[str, Any] | None:
 
 
 sync_registry.register(GmailSyncWorker())
-
-
-async def gmail_poll_loop_v2(interval_sec: int = 60) -> None:
-    """Temporary cron loop — Phase 3 (adaptive scheduler) replaces this.
-
-    For each connected Gmail user, run GmailSyncWorker.freshen(). Errors are
-    caught per-user so one bad token doesn't kill the loop.
-    """
-    import asyncio
-
-    logger.info("gmail_poll_loop_v2_started", interval_sec=interval_sec)
-    worker = GmailSyncWorker()
-    while True:
-        try:
-            conn_repo = ConnectorsRepository(db.raw)
-            user_ids = {str(r["user_id"]) for r in await conn_repo.list_connected(tool="gmail")}
-            for uid in user_ids:
-                try:
-                    await worker.freshen(UUID(uid))
-                except Exception as e:  # noqa: BLE001
-                    logger.error("gmail_freshen_crashed", user_id=uid, error=str(e))
-        except Exception as e:  # noqa: BLE001
-            logger.error("gmail_poll_v2_tick_crashed", error=str(e))
-        await asyncio.sleep(interval_sec)

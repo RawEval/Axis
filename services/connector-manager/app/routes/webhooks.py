@@ -20,6 +20,7 @@ import hmac
 import time
 from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID
 
 from axis_common import get_logger
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -29,7 +30,7 @@ from app.db import db
 from app.proactive.unanswered import detect_unanswered_messages
 from app.repositories.activity import ActivityEventsRepository
 from app.repositories.connectors import ConnectorsRepository
-from app.sync.notion_poll import poll_all_notion_workspaces
+from app.sync import registry as sync_registry
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -135,8 +136,22 @@ async def slack_webhook(
 
 @router.post("/sync/notion/run")
 async def trigger_notion_poll() -> dict[str, Any]:
-    result = await poll_all_notion_workspaces()
-    return {"ok": True, **result}
+    worker = sync_registry.get("notion")
+    if worker is None:
+        return {"ok": False, "error": "notion sync worker not registered"}
+    conn_repo = ConnectorsRepository(db.raw)
+    rows = await conn_repo.list_connected(tool="notion")
+    user_ids = {str(r["user_id"]) for r in rows}
+    inserted = 0
+    failed = 0
+    for uid in user_ids:
+        try:
+            result = await worker.freshen(UUID(uid))
+            inserted += result.rows_added
+        except Exception as e:  # noqa: BLE001
+            logger.error("trigger_notion_poll_user_failed", user_id=uid, error=str(e))
+            failed += 1
+    return {"ok": True, "connectors": len(user_ids), "inserted": inserted, "failed": failed}
 
 
 @router.post("/proactive/detect/unanswered")

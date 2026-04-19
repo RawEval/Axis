@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
     bg_tasks: list[asyncio.Task] = []
 
     # Adaptive cadence scheduler — one loop replacing all 5 per-source v2 loops
-    if settings.notion_poll_enabled:
+    if settings.connector_sync_enabled:
         bg_tasks.append(asyncio.create_task(scheduler_loop()))
     # FTS connector indexers — independent from the activity_events scheduler
     bg_tasks.append(asyncio.create_task(slack_sync_loop(3600)))     # hourly
