@@ -20,11 +20,16 @@ dependencies = [
     "mcp>=1.7.1",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+]
+dev = ["pytest>=8.3.0", "ruff>=0.5.5"]
+
 [tool.uv.sources]
 axis-common = { path = "../../packages/py-common", editable = true }
-
-[dependency-groups]
-dev = ["pytest>=8.3.0", "ruff>=0.5.5"]
 
 [tool.ruff]
 line-length = 100
