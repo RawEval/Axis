@@ -18,12 +18,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import db
 from app.routes import oauth, oauth_apps, tools, webhooks
-from app.sync.gdrive import gdrive_poll_loop_v2  # noqa: F401 — side-effect registers GDriveSyncWorker
+# Worker registration (side-effect imports)
+from app.sync import gdrive  # noqa: F401
+from app.sync import github  # noqa: F401
+from app.sync import gmail   # noqa: F401
+from app.sync import notion  # noqa: F401
+from app.sync import slack   # noqa: F401
 from app.sync.gdrive_sync import gdrive_sync_loop
-from app.sync.github import github_poll_loop_v2  # noqa: F401 — side-effect registers GitHubSyncWorker
-from app.sync.gmail import gmail_poll_loop_v2  # noqa: F401 — side-effect registers GmailSyncWorker
-from app.sync.notion import notion_poll_loop_v2
-from app.sync.slack import slack_poll_loop_v2  # noqa: F401 — side-effect registers SlackSyncWorker
+from app.sync.scheduler import scheduler_loop
 from app.sync.slack_sync import slack_sync_loop
 
 configure_logging(service=settings.service_name, level=settings.log_level)
@@ -36,15 +38,12 @@ async def lifespan(app: FastAPI):
     logger.info("connector_manager_startup")
     bg_tasks: list[asyncio.Task] = []
 
-    # Background sync loops — each indexes connector data into connector_index
+    # Adaptive cadence scheduler — one loop replacing all 5 per-source v2 loops
     if settings.notion_poll_enabled:
-        bg_tasks.append(asyncio.create_task(notion_poll_loop_v2(60)))
-    bg_tasks.append(asyncio.create_task(gmail_poll_loop_v2(60)))
-    bg_tasks.append(asyncio.create_task(slack_poll_loop_v2(60)))
+        bg_tasks.append(asyncio.create_task(scheduler_loop()))
+    # FTS connector indexers — independent from the activity_events scheduler
     bg_tasks.append(asyncio.create_task(slack_sync_loop(3600)))     # hourly
-    bg_tasks.append(asyncio.create_task(gdrive_poll_loop_v2(60)))
     bg_tasks.append(asyncio.create_task(gdrive_sync_loop(3600)))    # hourly
-    bg_tasks.append(asyncio.create_task(github_poll_loop_v2(60)))
 
     try:
         yield
